@@ -1,0 +1,379 @@
+---
+alwaysApply: true
+description: Development workflow, AI collaboration, planning standards, and git workflow
+---
+
+# Solo AI-Human Collaboration Workflow
+
+## Core Workflow for Solo Development
+
+When working on this project, follow this streamlined workflow optimized for solo development with AI assistance:
+
+### Solo Development Workflow Steps
+1. **Create feature branch** from `main` for significant changes
+2. **Plan Phase**: Analyze existing patterns and decompose task into logical chunks
+3. **Do Phase**: Implement changes following existing patterns with clear commits
+4. **Check Phase**: Run basic quality checks (`npm test` and `npm run lint`)
+5. **Create Pull Request** with detailed description
+6. **Tag AI reviewers**: `@codex review` and `@cursor review`
+7. **Address AI review feedback** with fixes
+8. **Human reviews** for business logic and final validation
+9. **Human merges** when satisfied
+
+### Absolute Requirements
+- ✅ **DO**: Create branches for features (not every small change)
+- ✅ **DO**: Run basic tests before pushing (`npm test`)
+- ✅ **DO**: Tag both AI bots for review
+- ✅ **DO**: Address AI review feedback before human review
+- ✅ **DO**: Follow simplified PDCA framework
+- ✅ **DO**: Include context analysis before AI tasks
+- ✅ **DO**: Use structured prompts with existing patterns
+- ✅ **DO**: Create comprehensive PR descriptions for AI context
+- ✅ **DO**: Use npm scripts for all validation
+- ✅ **DO**: Prioritize type checking (TypeScript strict mode)
+- ❌ **DON'T**: Work directly on main branch for features
+- ❌ **DON'T**: Skip basic quality checks
+- ❌ **DON'T**: Skip AI review process
+- ❌ **DON'T**: Skip context analysis before AI tasks
+- ❌ **DON'T**: Use unstructured AI prompts
+- ❌ **DON'T**: Skip addressing AI review feedback
+- ❌ **DON'T**: Worry about breaking changes or performance regressions
+- ❌ **DON'T**: Worry about team confusion (solo project)
+
+### Industry Standards Integration (Solo-Optimized)
+
+**Enhanced Quality Gates:**
+- ✅ **DO**: Follow web security best practices
+- ✅ **DO**: Implement proper error handling and logging
+- ✅ **DO**: Ensure accessibility (reduced motion, high contrast)
+- ❌ **DON'T**: Skip security considerations
+- ❌ **DON'T**: Ignore performance regressions
+- ❌ **DON'T**: Skip input validation
+
+## Simplified PDCA for Solo Development
+
+### Plan Phase (AI Analysis)
+- **Codebase Analysis**: Analyze existing patterns and similar implementations
+- **Task Decomposition**: Break features into logical chunks (not atomic)
+- **Pattern Recognition**: Identify existing code patterns to follow
+- **Success Criteria**: Define functional outcomes (not statistical)
+
+### Do Phase (AI Implementation)
+- **Structured Prompts**: Use context-rich prompts with existing patterns
+- **Follow Patterns**: Implement changes following established codebase patterns
+- **Clear Commits**: Each commit should have descriptive messages
+- **Basic Testing**: Ensure code runs without crashing
+
+### Check Phase (AI + Human Review)
+- **AI Review**: Address feedback from `@codex review` and `@cursor review`
+- **Quality Gates**: Run basic validations (`npm test`, `npm run lint`)
+- **Pattern Verification**: Ensure code follows existing patterns
+- **Human Review**: Business logic validation and final approval
+
+### Act Phase (Implementation)
+- **Address Feedback**: Fix issues identified by AI and human reviewers
+- **Merge Changes**: Human merges when satisfied
+- **Document Lessons**: Capture successful patterns for future reference
+
+## AI Collaboration Standards
+
+### Structured Prompting Framework
+```markdown
+## AI Task: [Specific Task]
+
+### Context Analysis Required
+- Analyze existing codebase patterns
+- Identify similar implementations
+- Review architectural constraints
+- Assess integration points
+
+### Task Decomposition
+- Break into atomic, testable chunks
+- Identify dependencies and order
+- Define success criteria for each chunk
+- Plan validation checkpoints
+
+### Implementation Strategy
+- Follow existing patterns
+- Write tests first (red-green cycle)
+- Implement incrementally
+- Validate at each checkpoint
+
+### Validation Checkpoint: "Prove Your Homework"
+When making claims or assertions, provide evidence:
+- **Pattern Claims**: Cite specific files and line numbers showing existing patterns
+- **Integration Claims**: Show actual integration points with code references
+- **Performance Claims**: Demonstrate improvements with concrete examples
+- **Architecture Claims**: Reference architectural decisions from existing code
+- **Assumption Validation**: Verify all assumptions against actual codebase state
+```
+
+### AI Code Generation Quality Gates
+
+- **Pattern Analysis**: AI must analyze existing patterns before generating code
+- **Test-First**: AI must write failing tests before implementation
+- **Atomic Commits**: Each AI-generated change must be independently testable
+- **Validation Checkpoints**: AI must include validation steps in workflows
+- **Evidence-Based Claims**: AI must cite specific code references when claiming to follow patterns or integrate with existing code
+
+### AI Collaboration Anti-Patterns
+
+- ❌ **Don't**: Accept AI code without pattern analysis
+- ❌ **Don't**: Skip test-first approach with AI
+- ❌ **Don't**: Allow AI to make architectural decisions without human review
+- ✅ **Do**: Use structured prompts that include existing code patterns
+- ✅ **Do**: Require AI to write tests before implementation
+- ✅ **Do**: Include validation checkpoints in AI workflows
+
+## Solo Development Priorities
+
+### Primary Focus Areas
+1. **Type Checking**: All TypeScript code must have complete type annotations
+2. **Basic Functionality**: Features work as intended
+3. **Code Quality**: Follows existing patterns and style
+4. **Integration**: Changes integrate with existing system
+
+### Secondary Focus Areas
+1. **Performance**: No obvious performance regressions (60 FPS target)
+2. **Documentation**: PR descriptions explain changes clearly
+3. **Testing**: Basic functionality tests pass
+
+### Quality Gates (Simplified for Solo Development)
+- **Pre-Push**: `npm run lint` and `npm test` must pass
+- **Type Checking**: TypeScript strict mode compliance required
+- **Basic Testing**: Code runs without crashing
+- **Game Functionality**: Game starts and plays correctly
+
+### Industry Standards Commands (Solo-Implemented)
+
+**Security and Quality:**
+- **Security Considerations**: Follow web security best practices
+- **Performance Considerations**: Monitor critical path performance (60 FPS)
+- **Code Quality**: Maintain high code quality standards
+- **Dependency Management**: Keep dependencies updated
+
+**Enhanced AI Review Process:**
+- **Security Review**: AI checks for web security compliance
+- **Performance Review**: AI checks for performance regressions
+- **Architecture Review**: AI checks for design patterns
+- **Code Quality Review**: AI checks for industry standards
+
+## NPM Script Standards
+
+### Preferred Commands
+- **Development**: `npm run dev` (starts Vite dev server)
+- **Testing**: `npm test`, `npm test -- --watch`
+- **Linting**: `npm run lint`, `npm run lint -- --fix`
+- **Type Checking**: `npm run type-check` (runs `tsc --noEmit`)
+- **Building**: `npm run build` (builds for production)
+- **Preview**: `npm run preview` (preview production build)
+
+### Command Usage Guidelines
+- Always use npm scripts over direct commands
+- Use `npm run dev` for development
+- Use `npm test` before committing changes
+- Use `npm run build` to verify production build
+- Use `npm run preview` to test production build locally
+
+## NPM Script Reference
+
+This section provides comprehensive reference for all npm scripts available in the codebase.
+
+### Development Lifecycle
+
+Development and build targets for controlling the application:
+
+- **`npm run dev`** - Start Vite development server (defaults to `http://localhost:3000`)
+- **`npm run build`** - Build for production (TypeScript compilation + Vite build)
+- **`npm run preview`** - Preview production build locally
+- **`npm run type-check`** - Run TypeScript type checking without emitting files
+
+### Testing
+
+All test-related targets:
+
+- **`npm test`** - Run test suite
+- **`npm test -- --watch`** - Run tests in watch mode
+- **`npm test -- --coverage`** - Run tests with coverage report
+- **`npm test -- Game.test.ts`** - Run specific test file
+- **`npm test -- -t "should update wave timer"`** - Run tests matching pattern
+
+### Code Quality
+
+Linting, formatting, and type checking targets:
+
+- **`npm run lint`** - Run ESLint (validation only)
+- **`npm run lint -- --fix`** - Run ESLint with auto-fix
+- **`npm run format`** - Format code with Prettier
+- **`npm run type-check`** - Check TypeScript types (`tsc --noEmit`)
+
+## GitHub Actions Workflow Standards
+
+### Cancellation-Aware Workflow Patterns
+- ✅ **DO**: Use `if: ${{ !cancelled() }}` instead of `if: always()`
+- ✅ **DO**: Add step-level timeouts to long-running operations
+- ✅ **DO**: Implement emergency cleanup on cancellation
+- ✅ **DO**: Use `timeout-minutes` for all build steps
+- ✅ **DO**: Add cancellation-specific cleanup steps
+- ❌ **DON'T**: Use `if: always()` conditions that ignore cancellation
+- ❌ **DON'T**: Skip timeout configuration for builds
+- ❌ **DON'T**: Allow workflows to run indefinitely after cancellation
+
+### Workflow Quality Gates
+- **Cancellation Response**: Workflows stop within seconds of cancellation
+- **Resource Cleanup**: Emergency cleanup prevents resource waste
+- **Timeout Management**: Step-level timeouts prevent indefinite execution
+- **Cost Control**: Cancelled workflows don't consume unnecessary GitHub Actions minutes
+
+### Workflow Pattern Examples
+
+#### Cancellation-Aware Job Conditions
+```yaml
+# Good: Respects cancellation
+if: ${{ !cancelled() && needs.build.result == 'success' }}
+
+# Bad: Ignores cancellation
+if: always() && needs.build.result == 'success'
+```
+
+#### Step-Level Timeouts
+```yaml
+# Good: Prevents indefinite execution
+- name: "Build application"
+  timeout-minutes: 10
+  run: npm run build
+
+# Bad: No timeout protection
+- name: "Build application"
+  run: npm run build
+```
+
+#### Emergency Cleanup
+```yaml
+# Good: Cleanup on cancellation
+- name: "Emergency cleanup on cancellation"
+  if: cancelled()
+  timeout-minutes: 1
+  run: |
+    echo "Workflow cancelled - emergency cleanup"
+    rm -rf node_modules dist || true
+```
+
+## Solo Development Anti-Patterns
+
+- ❌ **Don't**: Over-engineer with complex metrics
+- ❌ **Don't**: Require statistical validation for simple changes
+- ❌ **Don't**: Create extensive test suites for every feature
+- ❌ **Don't**: Worry about breaking changes (solo project)
+- ❌ **Don't**: Worry about performance regressions (solo project)
+- ❌ **Don't**: Worry about team confusion (solo project)
+- ✅ **Do**: Focus on "does it work" over "is it perfect"
+- ✅ **Do**: Use manual testing for rapid iteration
+- ✅ **Do**: Write tests only when you break something
+- ✅ **Do**: Prioritize type checking and code quality
+- ✅ **Do**: Use npm scripts for all operations
+
+## Planning Standards for Solo Development
+
+### Success Criteria Framework
+
+For solo development, focus on functional outcomes rather than statistical validation:
+
+#### 1. Functional Success Criteria
+
+- **Basic Functionality**: Feature works as intended
+- **Integration**: Changes integrate with existing system
+- **Performance**: No obvious performance regressions (60 FPS maintained)
+- **User Experience**: Changes improve or maintain user experience
+
+#### 2. Quality Gates
+
+- **Code Quality**: Follows existing patterns and style
+- **Basic Testing**: Code runs without crashing
+- **Integration**: Works with existing game systems
+- **Documentation**: PR description explains changes clearly
+
+#### 3. Success Validation
+
+- **Manual Testing**: Play the game and verify functionality
+- **Smoke Tests**: Basic functionality works
+- **Integration Tests**: Critical game systems work
+- **User Feedback**: Changes meet intended goals
+
+### Anti-Patterns to Avoid
+
+- ❌ **Don't**: Over-engineer with complex metrics
+- ❌ **Don't**: Require statistical validation for simple changes
+- ❌ **Don't**: Create extensive test suites for every feature
+- ✅ **Do**: Focus on "does it work" over "is it perfect"
+- ✅ **Do**: Use manual testing for rapid iteration
+- ✅ **Do**: Write tests only when you break something
+
+## Git Workflow & Branch Management
+
+### Branch Strategy
+
+- **`main`**: Production-ready code, always deployable
+- **`feat/*`**: Feature development branches
+- **`hotfix/*`**: Critical bug fixes
+
+### Branch Naming Convention
+
+```
+feat/wave-transitions
+feat/ability-upgrades
+hotfix/serenity-calculation
+```
+
+### Commit Message Convention
+
+```
+type(scope): description
+
+[optional body]
+```
+
+**Types**: feat, fix, test, docs, refactor, perf, chore
+
+**Examples**:
+
+```
+feat(game): add wave transition system
+fix(rendering): resolve canvas clearing issue
+test(balance): add serenity collapse validation
+refactor(systems): extract stressor spawning logic
+```
+
+### Quality Gates
+
+- **Pre-Push**: `npm run lint` and `npm test` must pass
+- **Bypassing Hooks**: Only use `--no-verify` when necessary and after manual verification
+
+## Project Structure
+
+This is a **web game** with these core components:
+
+- `src/main.ts` - Application entry point and game loop
+- `src/Game.ts` - Core game logic and state management
+- `src/GameConfig.ts` - Game configuration constants
+- `src/rendering/` - Canvas rendering system
+- `src/audio/` - Audio system and dynamic sound generation
+- `src/systems/` - Game systems (StressorSystem, AbilitySystem)
+- `src/ui/` - User interface components (UpgradeWheel, HUD)
+- `src/utils/` - Utility functions (math, random, etc.)
+- `src/testing/` - Test harness and game balance validation
+
+## Quality Gates & Commands
+
+- **All changes must pass tests**: `npm test`
+- **All changes must pass linters**: `npm run lint`
+- **Auto-fix issues**: `npm run lint -- --fix`
+- **Type checking**: `npm run type-check`
+- **Prefer npm scripts**: Over direct command-line tools
+
+## Testing Strategy
+
+- **Unit Tests**: `npm test` (preferred for development)
+- **Integration Tests**: `npm test -- integration`
+- **Game Balance Tests**: `npm test -- balance`
+- **Performance Tests**: `npm test -- performance`

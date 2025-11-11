@@ -1,0 +1,200 @@
+# Environment Configuration for Cursor Agent
+
+## Environment Variables
+- NODE_ENV=development (or production)
+- VITE_PORT=3000 (default Vite dev server port)
+
+## Node.js Configuration
+- Use Node.js 18+ as runtime
+- Use npm for package management
+- Include `src/` in TypeScript path resolution
+- Use Vite for development and building
+
+## Agent Behavior
+- Always use npm scripts when available
+- Prefer npm commands over direct node/tsc commands
+- Use debug logging level for development
+- Ensure Node.js environment is properly configured
+
+## Development Environment
+- Set NODE_ENV to development for verbose logging
+- Use Vite dev server for hot module replacement
+- Enable source maps for debugging
+- Configure TypeScript strict mode
+
+## Command-Specific Environment Requirements
+
+### NPM Commands
+- **Always use npm scripts** which handle environment internally
+- **Direct commands**: Use `npx` for one-off commands
+- **Package installation**: Use `npm install` or `npm ci` for CI
+
+### TypeScript Commands
+- **Type checking**: Use `npm run type-check` (runs `tsc --noEmit`)
+- **Compilation**: Use `npm run build` (handled by Vite)
+- **Direct tsc**: Use `npx tsc --noEmit` if needed
+
+### Vite Commands
+- **Development**: Use `npm run dev` (starts Vite dev server)
+- **Build**: Use `npm run build` (Vite production build)
+- **Preview**: Use `npm run preview` (preview production build)
+
+## NPM Scripts for Environment Management
+
+### Development Lifecycle Commands
+
+Control the application development and build:
+
+- **`npm run dev`** - Start Vite development server (defaults to `http://localhost:3000`)
+- **`npm run build`** - Build for production (TypeScript compilation + Vite build)
+- **`npm run preview`** - Preview production build locally
+- **`npm run type-check`** - Run TypeScript type checking without emitting files
+
+### Testing Commands
+
+Manage test execution:
+
+- **`npm test`** - Run test suite
+- **`npm test -- --watch`** - Run tests in watch mode
+- **`npm test -- --coverage`** - Run tests with coverage report
+- **`npm test -- Game.test.ts`** - Run specific test file
+- **`npm test -- -t "should update wave timer"`** - Run tests matching pattern
+
+### Code Quality Commands
+
+Linting, formatting, and type checking:
+
+- **`npm run lint`** - Run ESLint (validation only)
+- **`npm run lint -- --fix`** - Run ESLint with auto-fix
+- **`npm run format`** - Format code with Prettier
+- **`npm run type-check`** - Check TypeScript types (`tsc --noEmit`)
+
+### Package Management Commands
+
+Manage dependencies:
+
+- **`npm install`** - Install dependencies (development)
+- **`npm ci`** - Install dependencies from lock file (CI/production)
+- **`npm install <package>`** - Install specific package
+- **`npm install --save-dev <package>`** - Install dev dependency
+
+## Environment-Specific Configuration
+
+### Development Environment
+
+- **NODE_ENV**: `development`
+- **Vite**: Hot module replacement enabled
+- **Source Maps**: Enabled for debugging
+- **TypeScript**: Strict mode enabled
+- **Logging**: Verbose console logging
+
+### Production Environment
+
+- **NODE_ENV**: `production`
+- **Vite**: Optimized build with minification
+- **Source Maps**: Optional (for debugging)
+- **TypeScript**: Strict mode enabled
+- **Logging**: Minimal logging
+
+### Test Environment
+
+- **NODE_ENV**: `test`
+- **Vitest**: Test runner configuration
+- **Coverage**: Code coverage reporting
+- **TypeScript**: Strict mode enabled
+- **Logging**: Test-specific logging
+
+## Browser Environment Considerations
+
+### Canvas API
+
+- **Canvas Element**: Required for rendering
+- **2D Context**: Used for game rendering
+- **Performance**: Monitor FPS and adapt rendering
+
+### Web Audio API
+
+- **AudioContext**: Required for dynamic audio
+- **User Interaction**: Audio must be initialized on user interaction
+- **Performance**: Monitor audio processing performance
+
+### Local Storage
+
+- **Game State**: Optional persistence of game state
+- **Settings**: Store user preferences (reduced motion, high contrast)
+- **Telemetry**: Optional telemetry data storage
+
+## Performance Considerations
+
+### Development Performance
+
+- **Hot Module Replacement**: Fast iteration during development
+- **Source Maps**: Enable for debugging without affecting performance
+- **Type Checking**: Run type checking separately from build
+
+### Production Performance
+
+- **Code Splitting**: Optimize bundle size
+- **Minification**: Reduce bundle size
+- **Tree Shaking**: Remove unused code
+- **Asset Optimization**: Optimize images and assets
+
+## Accessibility Configuration
+
+### Reduced Motion
+
+- **Media Query**: `(prefers-reduced-motion: reduce)`
+- **Implementation**: Replace animations with opacity fades
+- **Testing**: Test with reduced motion enabled
+
+### High Contrast
+
+- **Media Query**: `(prefers-contrast: high)`
+- **Implementation**: Increase color contrast
+- **Testing**: Test with high contrast enabled
+
+## Browser Compatibility
+
+### Target Browsers
+
+- **Modern Browsers**: Chrome, Firefox, Safari, Edge (latest versions)
+- **ES2020**: Target ES2020 for modern JavaScript features
+- **Canvas API**: Required for rendering
+- **Web Audio API**: Required for audio
+
+### Polyfills
+
+- **Not Required**: Modern browsers support required APIs
+- **Fallbacks**: Implement graceful degradation if needed
+
+## Development Tools
+
+### VS Code / Cursor Configuration
+
+- **TypeScript**: Use workspace TypeScript version
+- **ESLint**: Integrated linting
+- **Prettier**: Integrated formatting
+- **Debugging**: Source maps enabled
+
+### Browser DevTools
+
+- **Console**: For logging and debugging
+- **Performance**: For performance profiling
+- **Network**: For asset loading analysis
+- **Application**: For local storage inspection
+
+## Environment Validation
+
+### Pre-Development Checks
+
+- **Node.js Version**: Verify Node.js 18+ is installed
+- **NPM Version**: Verify npm is up to date
+- **Dependencies**: Run `npm install` to ensure dependencies are installed
+- **TypeScript**: Verify TypeScript is properly configured
+
+### Pre-Build Checks
+
+- **Type Checking**: Run `npm run type-check` to verify types
+- **Linting**: Run `npm run lint` to verify code quality
+- **Tests**: Run `npm test` to verify functionality
+- **Build**: Run `npm run build` to verify production build

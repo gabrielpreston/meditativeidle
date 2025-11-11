@@ -1,0 +1,508 @@
+---
+globs: "**/*.ts,**/*.tsx"
+description: TypeScript code quality, type annotations, and coding standards for solo development
+---
+
+# TypeScript Code Quality Standards for Solo Development
+
+## Type Annotations (MANDATORY - Solo Development Priority)
+
+### Comprehensive Type Coverage Required
+
+**ALL** TypeScript code must include complete type annotations - this is the #1 priority for solo development:
+
+- **Function parameters**: `function processAudio(data: Uint8Array, sampleRate: number): AudioResult`
+- **Return types**: `(): GameState`, `(): Promise<void>`, `(): Vector2 | null`
+- **Variable annotations**: `const audioBuffer: Float32Array = new Float32Array(1024)`
+- **Class properties**: `private state: GameState`, `public readonly config: GameConfig`
+- **Generic types**: `Map<string, Stressor>`, `Array<AbilityUpgrade>`, `Promise<TestResult>`
+
+### Type Annotation Standards
+
+```typescript
+// Function signatures with complete types
+function processAudio(
+  audioData: Uint8Array,
+  sampleRate: number,
+  channels: number = 1
+): { samples: Float32Array; duration: number; rms: number } {
+  // Implementation
+}
+
+// Class definitions with typed properties
+class Game {
+  private state: GameState;
+  private stressorSystem: StressorSystem;
+  private abilitySystem: AbilitySystem;
+  private random: SeededRandom;
+  
+  constructor(width: number, height: number, seed?: number) {
+    // Implementation
+  }
+  
+  update(deltaTime: number): void {
+    // Implementation
+  }
+  
+  getState(): GameState {
+    return { ...this.state };
+  }
+}
+
+// Interface definitions
+export interface GameState {
+  serenity: number;
+  maxSerenity: number;
+  focus: number;
+  maxFocus: number;
+  insight: number;
+  wave: number;
+  waveTimer: number;
+  pace: number;
+  isPaused: boolean;
+  gameOver: boolean;
+  randomSeed: number;
+}
+
+// Generic types
+class ObjectPool<T> {
+  private pool: T[] = [];
+  private factory: () => T;
+  
+  constructor(factory: () => T) {
+    this.factory = factory;
+  }
+  
+  acquire(): T {
+    return this.pool.pop() ?? this.factory();
+  }
+  
+  release(item: T): void {
+    this.pool.push(item);
+  }
+}
+```
+
+### TypeScript Strict Mode
+
+- **Strict mode**: Enabled in `tsconfig.json` (`"strict": true`)
+- **No implicit any**: All types must be explicit
+- **No untyped definitions**: All functions must be typed
+- **No untyped calls**: All function calls must be type-safe
+
+### Type Annotation Anti-Patterns (Solo Development)
+
+- ❌ **Don't**: Use `any` without justification (use `unknown` if type is truly unknown)
+- ❌ **Don't**: Skip return type annotations
+- ❌ **Don't**: Use `@ts-ignore` without explanation
+- ❌ **Don't**: Use type assertions (`as`) without validation
+- ✅ **Do**: Use specific types over `any`
+- ✅ **Do**: Use `null` or `undefined` explicitly with union types
+- ✅ **Do**: Use `unknown` for truly unknown types, then narrow
+- ✅ **Do**: Run `npm run type-check` frequently during development
+
+## Code Quality Standards
+
+### ESLint and Prettier Configuration
+
+- **Line length**: 100 characters maximum
+- **Import organization**: External dependencies, then internal modules
+- **Naming conventions**: `camelCase` for variables/functions, `PascalCase` for classes/interfaces
+- **Whitespace**: 2 spaces for indentation (consistent with project)
+
+### Import Standards
+
+```typescript
+// 1. External dependencies
+import { defineConfig } from 'vite';
+import { Vector2 } from './types';
+
+// 2. Internal types
+import { GameState, StressorType } from './types';
+
+// 3. Internal modules
+import { Game } from './Game';
+import { Renderer } from './rendering/Renderer';
+import { GameConfig } from './GameConfig';
+
+// 4. Utilities
+import { distance } from './utils/MathUtils';
+import { SeededRandom } from './utils/Random';
+```
+
+### Function and Class Standards
+
+```typescript
+/**
+ * Processes audio data and returns analysis results.
+ * 
+ * @param audioData - Raw audio data as Uint8Array
+ * @param sampleRate - Sample rate in Hz (e.g., 44100)
+ * @param channels - Number of audio channels (1=mono, 2=stereo)
+ * @returns Object containing processed samples, duration, and RMS
+ * @throws {Error} If audioData is empty or invalid
+ */
+function processAudio(
+  audioData: Uint8Array,
+  sampleRate: number,
+  channels: number = 1
+): { samples: Float32Array; duration: number; rms: number } {
+  if (audioData.length === 0) {
+    throw new Error('audioData cannot be empty');
+  }
+  
+  // Implementation
+  return {
+    samples: new Float32Array(),
+    duration: 0,
+    rms: 0
+  };
+}
+```
+
+### Error Handling
+
+```typescript
+// Custom error types
+export class GameStateError extends Error {
+  constructor(message: string, public readonly state: GameState) {
+    super(message);
+    this.name = 'GameStateError';
+  }
+}
+
+// Error handling pattern
+function safeGameUpdate(game: Game, deltaTime: number): void {
+  try {
+    // Validate deltaTime
+    if (deltaTime <= 0 || deltaTime > 1.0) {
+      console.warn('Invalid deltaTime, clamping:', deltaTime);
+      deltaTime = Math.min(Math.max(deltaTime, 0), 1.0);
+    }
+    
+    game.update(deltaTime);
+  } catch (error) {
+    if (error instanceof GameStateError) {
+      console.error('Game state error:', error.message, error.state);
+      // Handle game state error
+    } else {
+      console.error('Unexpected error in game update:', error);
+      throw error;
+    }
+  }
+}
+```
+
+## Logging Standards
+
+### Console Logging Patterns
+
+```typescript
+// Good: Structured logging with context
+console.log('[Game] Wave started', { wave: state.wave, timer: state.waveTimer });
+console.warn('[Performance] FPS below threshold', { fps: this.fps, threshold: GameConfig.PERFORMANCE_THRESHOLD });
+console.error('[Game] Invalid state detected', { state: this.state });
+
+// Bad: String interpolation
+console.log(`Processing wave ${state.wave}`);
+
+// Good: Error logging with stack traces
+console.error('[Error] Game update failed', error);
+if (error instanceof Error) {
+  console.error('[Error] Stack trace:', error.stack);
+}
+```
+
+### Logging Levels
+
+- **DEBUG**: Detailed diagnostic information (development only)
+- **INFO**: General information about program execution
+- **WARN**: Something unexpected happened but execution continues
+- **ERROR**: Serious problem occurred, may affect functionality
+
+### Logging Anti-Patterns
+
+- ❌ **Don't**: Use string interpolation in log messages
+- ❌ **Don't**: Log sensitive data (user input, tokens)
+- ❌ **Don't**: Leave console.log statements in production code
+- ✅ **Do**: Use structured logging with context objects
+- ✅ **Do**: Include relevant state information
+- ✅ **Do**: Use appropriate log levels
+
+## Code Organization
+
+### Module Structure
+
+```
+src/
+├── Game.ts              # Core game logic
+├── GameConfig.ts        # Configuration constants
+├── types.ts             # Type definitions
+├── rendering/
+│   ├── Renderer.ts      # Main renderer
+│   └── effects/         # Visual effects
+├── audio/
+│   ├── AudioSystem.ts   # Audio manager
+│   └── generators/      # Sound generators
+├── systems/
+│   ├── StressorSystem.ts
+│   └── AbilitySystem.ts
+└── utils/
+    ├── MathUtils.ts
+    └── Random.ts
+```
+
+### Class Organization
+
+```typescript
+export class Game {
+  // 1. Public properties (if any)
+  public readonly config: GameConfig;
+  
+  // 2. Private properties
+  private state: GameState;
+  private stressorSystem: StressorSystem;
+  private abilitySystem: AbilitySystem;
+  
+  // 3. Constructor
+  constructor(width: number, height: number, seed?: number) {
+    // Initialization
+  }
+  
+  // 4. Public methods
+  update(deltaTime: number): void {
+    // Implementation
+  }
+  
+  getState(): GameState {
+    return { ...this.state };
+  }
+  
+  // 5. Private methods
+  private updateWave(deltaTime: number): void {
+    // Implementation
+  }
+  
+  private validateState(): boolean {
+    // Implementation
+  }
+}
+```
+
+## Performance Standards
+
+### Memory Management
+
+```typescript
+// Object pooling pattern
+class StressorPool {
+  private pool: Stressor[] = [];
+  private active: Map<string, Stressor> = new Map();
+  
+  acquire(type: StressorType): Stressor {
+    let stressor = this.pool.pop();
+    
+    if (!stressor) {
+      stressor = this.createStressor(type);
+    } else {
+      this.resetStressor(stressor, type);
+    }
+    
+    this.active.set(stressor.id, stressor);
+    return stressor;
+  }
+  
+  release(id: string): void {
+    const stressor = this.active.get(id);
+    if (stressor) {
+      this.active.delete(id);
+      this.pool.push(stressor);
+    }
+  }
+}
+```
+
+### Frame Rate Optimization
+
+```typescript
+// Efficient update pattern
+class GameApp {
+  private lastFrameTime: number = 0;
+  private fps: number = 60;
+  private performanceMode: boolean = false;
+  
+  private animate = (currentTime: number): void => {
+    const deltaTime = (currentTime - this.lastFrameTime) / 1000;
+    this.lastFrameTime = currentTime;
+    
+    // Update FPS tracking (once per second)
+    if (currentTime - this.lastFpsUpdate >= 1000) {
+      this.fps = this.frameCount;
+      this.frameCount = 0;
+      this.lastFpsUpdate = currentTime;
+      
+      // Adaptive performance mode
+      if (this.fps < GameConfig.PERFORMANCE_THRESHOLD) {
+        this.enablePerformanceMode();
+      }
+    }
+    
+    // Update and render
+    this.game.update(deltaTime);
+    this.renderer.render(this.game.getState());
+    
+    requestAnimationFrame(this.animate);
+  };
+}
+```
+
+### Performance Anti-Patterns (Solo Development)
+
+- ❌ **Don't**: Create objects in hot paths (use object pooling)
+- ❌ **Don't**: Allocate arrays in render loops
+- ❌ **Don't**: Use expensive operations in animation frames
+- ✅ **Do**: Use object pooling for frequently created objects
+- ✅ **Do**: Cache expensive calculations
+- ✅ **Do**: Use requestAnimationFrame for smooth animations
+
+## Testing Standards
+
+### Test Structure
+
+```typescript
+// src/testing/Game.test.ts
+import { describe, it, expect, beforeEach } from 'vitest';
+import { Game } from '../Game';
+import { GameConfig } from '../GameConfig';
+
+describe('Game', () => {
+  let game: Game;
+  
+  beforeEach(() => {
+    game = new Game(1920, 1080, 12345); // Fixed seed for determinism
+  });
+  
+  it('should initialize with default state', () => {
+    const state = game.getState();
+    expect(state.serenity).toBe(GameConfig.MAX_SERENITY);
+    expect(state.focus).toBe(GameConfig.MAX_FOCUS);
+    expect(state.wave).toBe(1);
+  });
+  
+  it('should update game state on update', () => {
+    const initialState = game.getState();
+    game.update(0.016); // ~60fps
+    const updatedState = game.getState();
+    
+    expect(updatedState.waveTimer).toBeLessThan(initialState.waveTimer);
+  });
+  
+  it('should handle game over when serenity reaches zero', () => {
+    // Force serenity to zero
+    // ... test implementation
+    
+    expect(game.getState().gameOver).toBe(true);
+  });
+});
+```
+
+### Test Naming Conventions
+
+- **Test files**: `*.test.ts` or `*.spec.ts`
+- **Test suites**: `describe('ClassName', () => { ... })`
+- **Test cases**: `it('should do something', () => { ... })`
+- **Fixtures**: `beforeEach`, `afterEach`, `beforeAll`, `afterAll`
+
+## Documentation Standards
+
+### JSDoc Format
+
+```typescript
+/**
+ * Processes game state and updates all systems.
+ * 
+ * @param deltaTime - Time elapsed since last update in seconds
+ * @throws {GameStateError} If game state is invalid
+ * 
+ * @example
+ * ```typescript
+ * const game = new Game(1920, 1080);
+ * game.update(0.016); // Update at 60fps
+ * ```
+ */
+update(deltaTime: number): void {
+  // Implementation
+}
+```
+
+### Type Documentation
+
+```typescript
+/**
+ * Represents the complete game state at a point in time.
+ * 
+ * @property serenity - Current serenity value (0 to maxSerenity)
+ * @property maxSerenity - Maximum serenity value
+ * @property focus - Current focus value (0 to maxFocus)
+ * @property maxFocus - Maximum focus value
+ * @property insight - Current insight currency
+ * @property wave - Current wave number (1-indexed)
+ * @property waveTimer - Time remaining in current wave (seconds)
+ * @property pace - Simulation speed multiplier
+ * @property isPaused - Whether game is paused
+ * @property gameOver - Whether game has ended
+ * @property randomSeed - Seed for deterministic random generation
+ */
+export interface GameState {
+  serenity: number;
+  maxSerenity: number;
+  focus: number;
+  maxFocus: number;
+  insight: number;
+  wave: number;
+  waveTimer: number;
+  pace: number;
+  isPaused: boolean;
+  gameOver: boolean;
+  randomSeed: number;
+}
+```
+
+## Solo Development Quality Gates
+
+### Pre-commit Hooks (Simplified)
+
+- **ESLint**: Code quality and style checking
+- **Prettier**: Code formatting
+- **TypeScript**: Type checking (`tsc --noEmit`)
+
+### Solo Development Commands
+
+- **Type checking**: `npm run type-check` (runs `tsc --noEmit`)
+- **Linting**: `npm run lint` (runs ESLint)
+- **Formatting**: `npm run format` (runs Prettier)
+- **Testing**: `npm test` (runs test suite)
+
+### Solo Development Code Review Checklist
+
+- [ ] All functions have type annotations (priority #1)
+- [ ] JSDoc comments follow the standard format
+- [ ] Error handling is comprehensive
+- [ ] Tests cover basic functionality
+- [ ] Logging uses structured format
+- [ ] No hardcoded values or magic numbers
+- [ ] Code follows existing patterns
+- [ ] Performance considerations addressed (object pooling, etc.)
+
+## Solo Development Anti-Patterns
+
+- ❌ **Don't**: Skip type checking (solo project priority)
+- ❌ **Don't**: Use `any` without justification
+- ❌ **Don't**: Over-engineer with complex patterns
+- ❌ **Don't**: Create objects in hot paths
+- ❌ **Don't**: Ignore performance in animation loops
+- ✅ **Do**: Focus on "does it work" over "is it perfect"
+- ✅ **Do**: Use manual testing for rapid iteration
+- ✅ **Do**: Write tests only when you break something
+- ✅ **Do**: Prioritize type checking and code quality
+- ✅ **Do**: Use npm scripts for all operations

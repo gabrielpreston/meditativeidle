@@ -1,0 +1,479 @@
+---
+globs: "src/**/*.ts,src/**/*.tsx,vite.config.ts,package.json,tsconfig.json"
+description: Web game architecture patterns, TypeScript organization, and Vite build optimization
+---
+
+# Meditative Idle Defense Architecture Standards
+
+## Web Game Architecture
+
+### Core Application Structure
+
+**Main Components:**
+- `src/main.ts` - Application entry point, game loop, and coordination
+- `src/Game.ts` - Core game logic and state management
+- `src/GameConfig.ts` - Game configuration constants and balance parameters
+- `src/types.ts` - TypeScript type definitions and interfaces
+- `src/rendering/` - Canvas rendering system
+- `src/audio/` - Audio system and dynamic sound generation
+- `src/systems/` - Game systems (StressorSystem, AbilitySystem)
+- `src/ui/` - User interface components (UpgradeWheel, HUD)
+- `src/utils/` - Utility functions (math, random, etc.)
+- `src/testing/` - Test harness and game balance validation
+
+### Application Entry Point Pattern
+
+```typescript
+// src/main.ts
+import { Game } from './Game';
+import { Renderer } from './rendering/Renderer';
+import { AudioSystem } from './audio/AudioSystem';
+import { UpgradeWheel } from './ui/UpgradeWheel';
+
+class GameApp {
+  private canvas: HTMLCanvasElement;
+  private ctx: CanvasRenderingContext2D;
+  private game: Game;
+  private renderer: Renderer;
+  private audioSystem: AudioSystem;
+  
+  constructor() {
+    this.canvas = document.getElementById('gameCanvas') as HTMLCanvasElement;
+    this.ctx = this.canvas.getContext('2d')!;
+    
+    this.game = new Game(this.canvas.width, this.canvas.height);
+    this.renderer = new Renderer(this.canvas);
+    this.audioSystem = new AudioSystem();
+    
+    this.setupEventListeners();
+    this.start();
+  }
+  
+  private animate = (currentTime: number = performance.now()): void => {
+    const deltaTime = (currentTime - this.lastFrameTime) / 1000;
+    this.lastFrameTime = currentTime;
+    
+    this.game.update(deltaTime);
+    this.renderer.render(this.game.getState());
+    this.audioSystem.update(this.game.getState());
+    
+    requestAnimationFrame(this.animate);
+  };
+}
+```
+
+### Game Loop Architecture
+
+```typescript
+// Core game loop pattern
+class Game {
+  private state: GameState;
+  private stressorSystem: StressorSystem;
+  private abilitySystem: AbilitySystem;
+  
+  update(deltaTime: number): void {
+    // Update game systems
+    this.stressorSystem.update(deltaTime, this.state);
+    this.abilitySystem.update(deltaTime, this.state);
+    
+    // Update game state
+    this.updateWave(deltaTime);
+    this.updateResources(deltaTime);
+    
+    // Check win/loss conditions
+    if (this.state.serenity <= 0) {
+      this.handleGameOver();
+    }
+  }
+}
+```
+
+### System Architecture Patterns
+
+#### State Management
+
+```typescript
+// Centralized game state
+export interface GameState {
+  serenity: number;
+  maxSerenity: number;
+  focus: number;
+  maxFocus: number;
+  insight: number;
+  wave: number;
+  waveTimer: number;
+  pace: number;
+  isPaused: boolean;
+  gameOver: boolean;
+  randomSeed: number;
+}
+
+// State access pattern
+class Game {
+  getState(): GameState {
+    return { ...this.state }; // Return immutable copy
+  }
+  
+  setStateChangeCallback(callback: (state: GameState) => void): void {
+    this.onStateChange = callback;
+  }
+}
+```
+
+#### System Communication
+
+```typescript
+// System dependency pattern
+class Game {
+  private stressorSystem: StressorSystem;
+  private abilitySystem: AbilitySystem;
+  
+  constructor(width: number, height: number, seed?: number) {
+    this.random = new SeededRandom(seed || Date.now());
+    this.stressorSystem = new StressorSystem(this.center, width, height, this.random);
+    this.abilitySystem = new AbilitySystem();
+  }
+  
+  // Systems interact through game state
+  update(deltaTime: number): void {
+    const stressors = this.stressorSystem.getStressors();
+    this.abilitySystem.processAbilities(stressors, this.state);
+  }
+}
+```
+
+### Rendering Architecture
+
+#### Canvas Rendering Pattern
+
+```typescript
+// src/rendering/Renderer.ts
+export class Renderer {
+  private canvas: HTMLCanvasElement;
+  private ctx: CanvasRenderingContext2D;
+  
+  constructor(canvas: HTMLCanvasElement) {
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d')!;
+    this.setupCanvas();
+  }
+  
+  render(state: GameState): void {
+    // Clear canvas
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    
+    // Render background
+    this.renderBackground(state);
+    
+    // Render game entities
+    this.renderCenter(state);
+    this.renderStressors(state);
+    this.renderAura(state);
+    
+    // Render UI
+    this.renderHUD(state);
+  }
+  
+  private renderBackground(state: GameState): void {
+    // Procedural watercolor-like background
+    const color = this.getSerenityColor(state.serenity);
+    this.ctx.fillStyle = color;
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+  }
+}
+```
+
+### Audio Architecture
+
+#### Dynamic Audio System
+
+```typescript
+// src/audio/AudioSystem.ts
+export class AudioSystem {
+  private audioContext: AudioContext | null = null;
+  private currentHarmony: number[] = [];
+  
+  initialize(): void {
+    this.audioContext = new AudioContext();
+    this.setupOscillators();
+  }
+  
+  update(state: GameState): void {
+    if (!this.audioContext) return;
+    
+    // Update harmony based on serenity
+    const harmony = this.getHarmonyForSerenity(state.serenity);
+    this.updateOscillators(harmony);
+    
+    // Trigger ability sounds
+    if (state.abilityTriggered) {
+      this.playAbilitySound(state.abilityType);
+    }
+  }
+  
+  private getHarmonyForSerenity(serenity: number): number[] {
+    // High serenity: consonant intervals
+    // Low serenity: dissonant intervals
+    const ratio = serenity / GameConfig.MAX_SERENITY;
+    return this.calculateHarmony(ratio);
+  }
+}
+```
+
+### Performance Optimization Patterns
+
+#### Frame Rate Management
+
+```typescript
+// Performance monitoring and adaptation
+class GameApp {
+  private fps: number = 60;
+  private performanceMode: boolean = false;
+  
+  private animate = (currentTime: number): void => {
+    const deltaTime = (currentTime - this.lastFrameTime) / 1000;
+    this.lastFrameTime = currentTime;
+    
+    // Update FPS tracking
+    this.updateFPS(currentTime);
+    
+    // Adaptive performance mode
+    if (this.fps < GameConfig.PERFORMANCE_THRESHOLD && !this.performanceMode) {
+      this.performanceMode = true;
+      this.enablePerformanceMode();
+    }
+    
+    // Update and render
+    this.game.update(deltaTime);
+    this.renderer.render(this.game.getState());
+    
+    requestAnimationFrame(this.animate);
+  };
+  
+  private enablePerformanceMode(): void {
+    // Reduce particle effects
+    // Simplify rendering
+    // Lower update frequency for non-critical systems
+  }
+}
+```
+
+#### Object Pooling Pattern
+
+```typescript
+// Stressor object pooling
+class StressorSystem {
+  private pool: Stressor[] = [];
+  private active: Map<string, Stressor> = new Map();
+  
+  spawnStressor(type: StressorType): Stressor {
+    let stressor = this.pool.pop();
+    
+    if (!stressor) {
+      stressor = this.createStressor(type);
+    } else {
+      this.resetStressor(stressor, type);
+    }
+    
+    this.active.set(stressor.id, stressor);
+    return stressor;
+  }
+  
+  removeStressor(id: string): void {
+    const stressor = this.active.get(id);
+    if (stressor) {
+      this.active.delete(id);
+      this.pool.push(stressor);
+    }
+  }
+}
+```
+
+### Build System Architecture
+
+#### Vite Configuration
+
+```typescript
+// vite.config.ts
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+  server: {
+    port: 3000,
+    open: true,
+    hmr: true // Hot module replacement for development
+  },
+  build: {
+    outDir: 'dist',
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'game-core': ['./src/Game.ts', './src/GameConfig.ts'],
+          'rendering': ['./src/rendering/Renderer.ts'],
+          'audio': ['./src/audio/AudioSystem.ts']
+        }
+      }
+    }
+  }
+});
+```
+
+### TypeScript Organization Patterns
+
+#### Module Structure
+
+```
+src/
+├── main.ts              # Entry point
+├── Game.ts              # Core game logic
+├── GameConfig.ts        # Configuration constants
+├── types.ts             # Type definitions
+├── rendering/
+│   ├── Renderer.ts      # Main renderer
+│   └── effects/          # Visual effects
+├── audio/
+│   ├── AudioSystem.ts   # Audio manager
+│   └── generators/      # Sound generators
+├── systems/
+│   ├── StressorSystem.ts
+│   └── AbilitySystem.ts
+├── ui/
+│   ├── UpgradeWheel.ts
+│   └── HUD.ts
+├── utils/
+│   ├── MathUtils.ts
+│   └── Random.ts
+└── testing/
+    └── TestHarness.ts
+```
+
+#### Import Organization
+
+```typescript
+// 1. External dependencies
+import { defineConfig } from 'vite';
+
+// 2. Internal types
+import { GameState, Vector2 } from './types';
+
+// 3. Internal modules
+import { Game } from './Game';
+import { Renderer } from './rendering/Renderer';
+import { GameConfig } from './GameConfig';
+
+// 4. Utilities
+import { distance } from './utils/MathUtils';
+```
+
+### Error Handling Patterns
+
+#### Game State Validation
+
+```typescript
+class Game {
+  update(deltaTime: number): void {
+    // Validate deltaTime
+    if (deltaTime <= 0 || deltaTime > 1.0) {
+      console.warn('Invalid deltaTime, clamping:', deltaTime);
+      deltaTime = Math.min(Math.max(deltaTime, 0), 1.0);
+    }
+    
+    // Validate state before update
+    if (!this.validateState()) {
+      console.error('Invalid game state detected');
+      return;
+    }
+    
+    // Update systems
+    this.stressorSystem.update(deltaTime, this.state);
+  }
+  
+  private validateState(): boolean {
+    return (
+      this.state.serenity >= 0 &&
+      this.state.serenity <= this.state.maxSerenity &&
+      this.state.focus >= 0 &&
+      this.state.focus <= this.state.maxFocus &&
+      this.state.wave >= 0
+    );
+  }
+}
+```
+
+### Accessibility Patterns
+
+#### Reduced Motion Support
+
+```typescript
+class GameApp {
+  private reducedMotion: boolean = false;
+  
+  setupAccessibility(): void {
+    // Check for reduced motion preference
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    this.reducedMotion = mediaQuery.matches;
+    
+    mediaQuery.addEventListener('change', (e) => {
+      this.reducedMotion = e.matches;
+      this.updateRenderingMode();
+    });
+  }
+  
+  private updateRenderingMode(): void {
+    if (this.reducedMotion) {
+      // Replace animations with opacity fades
+      // Disable particle effects
+      // Simplify transitions
+    }
+  }
+}
+```
+
+### Testing Architecture
+
+#### Game Balance Validation
+
+```typescript
+// src/testing/TestHarness.ts
+export class TestHarness {
+  async runBalanceTest(): Promise<TestResult> {
+    const game = new Game(1920, 1080, 12345); // Fixed seed
+    let waveReached = 0;
+    let serenityCollapsed = false;
+    
+    // Simulate 20 waves at accelerated pace
+    for (let wave = 1; wave <= 20; wave++) {
+      game.setPace(10.0); // 10x speed
+      
+      while (game.getState().wave === wave && !game.getState().gameOver) {
+        game.update(0.016); // ~60fps simulation
+      }
+      
+      if (game.getState().gameOver) {
+        waveReached = wave;
+        serenityCollapsed = true;
+        break;
+      }
+    }
+    
+    return {
+      serenityCollapsedByWave15: serenityCollapsed && waveReached <= 15,
+      waveReached,
+      duration: game.getSessionDuration()
+    };
+  }
+}
+```
+
+## Quality Gates
+
+### Architecture Validation
+
+- **Separation of concerns**: Game logic, rendering, and audio are separate
+- **State management**: Centralized, immutable game state
+- **Performance**: 60 FPS target with adaptive performance mode
+- **Accessibility**: Reduced motion and high contrast support
+- **Type safety**: Complete TypeScript type coverage
+- **Build optimization**: Code splitting and source maps enabled
+- **Error handling**: State validation and graceful degradation

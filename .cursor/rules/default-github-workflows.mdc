@@ -1,0 +1,393 @@
+---
+globs: ".github/workflows/*.yml,.github/workflows/*.yaml"
+description: GitHub Actions workflow best practices, cancellation patterns, and timeout strategies
+---
+
+# GitHub Actions Workflow Best Practices
+
+## Core Workflow Principles
+
+### Cancellation-Aware Design
+- **Always respect cancellation**: Use `if: ${{ !cancelled() }}` instead of `if: always()`
+- **Implement emergency cleanup**: Add cleanup steps that run on cancellation
+- **Set appropriate timeouts**: Use both job-level and step-level timeouts
+- **Prevent resource waste**: Ensure cancelled workflows don't consume unnecessary resources
+
+### Timeout Strategy
+- **Job-level timeouts**: Set reasonable limits for entire jobs (5-15 minutes)
+- **Step-level timeouts**: Set specific limits for individual steps (2-10 minutes)
+- **Layered approach**: Use different timeout values for different operation types
+- **Emergency limits**: Use short timeouts (1-2 minutes) for cleanup operations
+
+## Workflow Pattern Standards
+
+### Job Condition Patterns
+
+#### ✅ Good: Cancellation-Aware Conditions
+```yaml
+jobs:
+  build:
+    if: ${{ !cancelled() && needs.lint.result == 'success' }}
+    timeout-minutes: 10
+  
+  test:
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
+    timeout-minutes: 15
+  
+  deploy:
+    if: ${{ !cancelled() }}
+    timeout-minutes: 5
+```
+
+#### ❌ Bad: Cancellation-Ignoring Conditions
+```yaml
+jobs:
+  build:
+    if: always() && needs.lint.result == 'success'  # Ignores cancellation
+  
+  deploy:
+    if: always()  # Always runs, even when cancelled
+```
+
+### Step Timeout Patterns
+
+#### ✅ Good: Comprehensive Timeout Coverage
+```yaml
+steps:
+  - name: "Install dependencies"
+    timeout-minutes: 5
+    run: npm ci
+  
+  - name: "Run tests"
+    timeout-minutes: 10
+    run: npm test
+  
+  - name: "Build application"
+    timeout-minutes: 10
+    run: npm run build
+  
+  - name: "Cleanup resources"
+    if: ${{ !cancelled() }}
+    timeout-minutes: 2
+    run: rm -rf node_modules dist || true
+  
+  - name: "Emergency cleanup on cancellation"
+    if: cancelled()
+    timeout-minutes: 1
+    run: |
+      echo "Workflow cancelled - emergency cleanup"
+      rm -rf node_modules dist || true
+```
+
+#### ❌ Bad: Missing Timeout Protection
+```yaml
+steps:
+  - name: "Build application"
+    run: npm run build  # No timeout - can run indefinitely
+  
+  - name: "Cleanup resources"
+    if: always()  # Ignores cancellation
+    run: rm -rf node_modules dist || true
+```
+
+### Emergency Cleanup Patterns
+
+#### Standard Emergency Cleanup
+```yaml
+- name: "Emergency cleanup on cancellation"
+  if: cancelled()
+  timeout-minutes: 1
+  run: |
+    echo "::group::Emergency Cleanup (Cancelled)"
+    echo "Workflow cancelled - performing emergency cleanup"
+    rm -rf node_modules dist || true
+    echo "Emergency cleanup completed"
+    echo "::endgroup::"
+```
+
+## Workflow Architecture Patterns
+
+### Node.js Build Pipeline
+```yaml
+jobs:
+  lint:
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - name: "Install dependencies"
+        timeout-minutes: 3
+        run: npm ci
+      - name: "Run linters"
+        timeout-minutes: 2
+        run: npm run lint
+      - name: "Type check"
+        timeout-minutes: 2
+        run: npm run type-check
+  
+  test:
+    needs: ["lint"]
+    if: ${{ !cancelled() && needs.lint.result == 'success' }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - name: "Install dependencies"
+        timeout-minutes: 3
+        run: npm ci
+      - name: "Run tests"
+        timeout-minutes: 10
+        run: npm test
+      - name: "Cleanup after test"
+        if: ${{ !cancelled() }}
+        timeout-minutes: 1
+        run: rm -rf node_modules || true
+      - name: "Emergency cleanup on cancellation"
+        if: cancelled()
+        timeout-minutes: 1
+        run: |
+          echo "Workflow cancelled - emergency cleanup"
+          rm -rf node_modules || true
+  
+  build:
+    needs: ["test"]
+    if: ${{ !cancelled() && needs.test.result == 'success' }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - name: "Install dependencies"
+        timeout-minutes: 3
+        run: npm ci
+      - name: "Build application"
+        timeout-minutes: 5
+        run: npm run build
+      - name: "Upload build artifacts"
+        if: ${{ !cancelled() }}
+        timeout-minutes: 2
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: "Emergency cleanup on cancellation"
+        if: cancelled()
+        timeout-minutes: 1
+        run: |
+          echo "Workflow cancelled - emergency cleanup"
+          rm -rf node_modules dist || true
+```
+
+### Test Execution
+```yaml
+jobs:
+  test:
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        node-version: ['18', '20']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      - name: "Install dependencies"
+        timeout-minutes: 3
+        run: npm ci
+      - name: "Run tests"
+        timeout-minutes: 10
+        run: npm test
+      - name: "Emergency cleanup on cancellation"
+        if: cancelled()
+        timeout-minutes: 1
+        run: |
+          echo "Workflow cancelled - stopping tests"
+          rm -rf node_modules || true
+```
+
+### Workflow Status Reporting
+```yaml
+jobs:
+  workflow-status:
+    needs: ["lint", "test", "build"]
+    if: ${{ !cancelled() }}
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 2
+    steps:
+      - name: "Report workflow status"
+        timeout-minutes: 1
+        run: |
+          echo "## Workflow Status" >> $GITHUB_STEP_SUMMARY
+          echo "- Lint: ${{ needs.lint.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Test: ${{ needs.test.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Build: ${{ needs.build.result }}" >> $GITHUB_STEP_SUMMARY
+```
+
+## Resource Management Patterns
+
+### Cache Management with Cancellation
+```yaml
+steps:
+  - name: "Setup Node.js"
+    uses: actions/setup-node@v4
+    with:
+      node-version: '18'
+      cache: 'npm'
+  
+  - name: "Install dependencies"
+    timeout-minutes: 5
+    run: npm ci
+  
+  - name: "Cleanup cache on cancellation"
+    if: cancelled()
+    timeout-minutes: 1
+    run: |
+      echo "Cleaning up npm cache"
+      npm cache clean --force || true
+```
+
+### Resource Cleanup Reporting
+```yaml
+- name: "Resource cleanup with reporting"
+  if: ${{ !cancelled() }}
+  timeout-minutes: 2
+  run: |
+    echo "::group::Resource Cleanup Report"
+    before_space=$(df -h / | awk 'NR==2{print $4}')
+    rm -rf node_modules dist || true
+    after_space=$(df -h / | awk 'NR==2{print $4}')
+    echo "Cleanup Results:"
+    echo "  Disk space: $before_space to $after_space"
+    echo "::endgroup::"
+```
+
+## Workflow Integration Patterns
+
+### Concurrency Control
+```yaml
+concurrency:
+  group: "ci-${{ github.ref }}"
+  cancel-in-progress: true
+
+# Or for specific workflow types
+concurrency:
+  group: "build-${{ github.ref }}"
+  cancel-in-progress: true
+```
+
+### Workflow Dependencies
+```yaml
+jobs:
+  changes:
+    runs-on: "ubuntu-latest"
+    outputs:
+      src: "${{ steps.filter.outputs.src }}"
+      config: "${{ steps.filter.outputs.config }}"
+  
+  lint:
+    needs: ["changes"]
+    if: ${{ !cancelled() && needs.changes.outputs.src == 'true' }}
+    uses: ./.github/workflows/lint.yml
+  
+  test:
+    needs: ["lint"]
+    if: ${{ !cancelled() && (needs.lint.result == 'success' || needs.lint.result == 'skipped') }}
+    uses: ./.github/workflows/test.yml
+```
+
+## Security and Permissions
+
+### Minimal Permissions
+```yaml
+permissions:
+  contents: "read"
+  actions: "read"
+  pull-requests: "write"
+  statuses: "write"
+```
+
+### Secure Workflow Patterns
+```yaml
+jobs:
+  security-scan:
+    if: ${{ !cancelled() }}
+    timeout-minutes: 10
+    steps:
+      - name: "Security scan"
+        timeout-minutes: 5
+        run: npm audit
+      
+      - name: "Cleanup on cancellation"
+        if: cancelled()
+        timeout-minutes: 1
+        run: echo "Security scan cancelled"
+```
+
+## Monitoring and Observability
+
+### Performance Metrics
+```yaml
+- name: "Build performance metrics"
+  if: ${{ !cancelled() }}
+  timeout-minutes: 1
+  run: |
+    echo "## Build Performance Metrics" >> $GITHUB_STEP_SUMMARY
+    echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+    echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+    echo "| Node Version | $(node --version) |" >> $GITHUB_STEP_SUMMARY
+    echo "| NPM Version | $(npm --version) |" >> $GITHUB_STEP_SUMMARY
+    echo "| Cancellation Status | Not Cancelled |" >> $GITHUB_STEP_SUMMARY
+```
+
+### Job Status Summary
+```yaml
+- name: "Job status summary"
+  if: ${{ !cancelled() }}
+  timeout-minutes: 1
+  run: |
+    echo "::group::Job Status Summary"
+    echo "Job: ${{ github.job }}"
+    echo "Runner: ${{ runner.os }} (${{ runner.arch }})"
+    echo "Node Version: $(node --version)"
+    echo "NPM Version: $(npm --version)"
+    echo "Available Space: $(df -h / | awk 'NR==2{print $4}')"
+    echo "::endgroup::"
+```
+
+## Quality Gates
+
+### Workflow Validation Checklist
+- [ ] All jobs use `if: ${{ !cancelled() }}` instead of `if: always()`
+- [ ] All jobs have appropriate `timeout-minutes` values
+- [ ] All long-running steps have `timeout-minutes` values
+- [ ] Emergency cleanup steps are implemented with `if: cancelled()`
+- [ ] Resource cleanup steps respect cancellation with `if: ${{ !cancelled() }}`
+- [ ] Workflow uses minimal required permissions
+- [ ] Concurrency control is properly configured
+- [ ] Workflow dependencies are cancellation-aware
+
+### Anti-Patterns to Avoid
+- ❌ **Don't**: Use `if: always()` without considering cancellation
+- ❌ **Don't**: Skip timeout configuration for npm operations
+- ❌ **Don't**: Allow workflows to run indefinitely after cancellation
+- ❌ **Don't**: Skip emergency cleanup for resource-intensive operations
+- ❌ **Don't**: Use excessive permissions in workflow files
+- ❌ **Don't**: Skip concurrency control for workflows that can conflict
+
+### Best Practices Summary
+- ✅ **Do**: Always respect cancellation signals
+- ✅ **Do**: Implement comprehensive timeout strategies
+- ✅ **Do**: Add emergency cleanup for all workflows
+- ✅ **Do**: Use minimal required permissions
+- ✅ **Do**: Implement proper concurrency control
+- ✅ **Do**: Monitor workflow performance and resource usage
+- ✅ **Do**: Document workflow patterns and rationale

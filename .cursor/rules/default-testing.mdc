@@ -1,0 +1,534 @@
+---
+globs: "src/**/*.test.ts,src/**/*.spec.ts,src/testing/**/*.ts"
+description: Testing patterns and requirements for game development
+---
+
+# Solo Testing Strategy
+
+## Test Categories for Solo Development
+
+### Simplified Test Structure
+
+```
+src/
+├── Game.ts
+├── Game.test.ts          # Unit tests for Game
+├── systems/
+│   ├── StressorSystem.ts
+│   └── StressorSystem.test.ts
+├── utils/
+│   ├── MathUtils.ts
+│   └── MathUtils.test.ts
+└── testing/
+    ├── TestHarness.ts    # Game balance validation
+    └── TestHarness.test.ts
+```
+
+### Test Categories (Simplified)
+
+- **Unit Tests**: Fast, isolated tests of individual functions/classes (`*.test.ts` alongside source files)
+- **Integration Tests**: Tests that verify multiple systems work together
+- **Game Balance Tests**: Validation that game mechanics work as specified (serenity collapses by wave 15, etc.)
+- **Performance Tests**: FPS targets and performance validation
+
+### Industry Testing Standards (Solo-Optimized)
+
+**Testing Best Practices:**
+- **Test Pyramid**: Unit (70%), Integration (20%), Game Balance (8%), Performance (2%)
+- **Deterministic Testing**: Use fixed seeds for reproducible tests
+- **Performance Testing**: Critical path performance validation (60 FPS target)
+- **Game Balance Testing**: Validate game mechanics match specification
+
+**Quality Gates (Industry-Aligned):**
+- **Code Coverage**: Maintain >80% coverage for critical paths
+- **Performance Testing**: Critical paths meet performance requirements (60 FPS)
+- **Game Balance Testing**: Game mechanics match specification (serenity collapses by wave 15)
+- **Integration Testing**: Systems work together correctly
+
+## Unit Testing Patterns
+
+### Basic Functionality Tests
+
+```typescript
+// src/utils/MathUtils.test.ts
+import { describe, it, expect } from 'vitest';
+import { distance, clamp, lerp } from './MathUtils';
+
+describe('MathUtils', () => {
+  describe('distance', () => {
+    it('should calculate distance between two points', () => {
+      const p1 = { x: 0, y: 0 };
+      const p2 = { x: 3, y: 4 };
+      expect(distance(p1, p2)).toBe(5);
+    });
+    
+    it('should return 0 for same point', () => {
+      const p = { x: 5, y: 5 };
+      expect(distance(p, p)).toBe(0);
+    });
+  });
+  
+  describe('clamp', () => {
+    it('should clamp value to range', () => {
+      expect(clamp(5, 0, 10)).toBe(5);
+      expect(clamp(-5, 0, 10)).toBe(0);
+      expect(clamp(15, 0, 10)).toBe(10);
+    });
+  });
+  
+  describe('lerp', () => {
+    it('should interpolate between values', () => {
+      expect(lerp(0, 10, 0.5)).toBe(5);
+      expect(lerp(0, 10, 0)).toBe(0);
+      expect(lerp(0, 10, 1)).toBe(10);
+    });
+  });
+});
+```
+
+### Game Logic Tests
+
+```typescript
+// src/Game.test.ts
+import { describe, it, expect, beforeEach } from 'vitest';
+import { Game } from './Game';
+import { GameConfig } from './GameConfig';
+
+describe('Game', () => {
+  let game: Game;
+  
+  beforeEach(() => {
+    game = new Game(1920, 1080, 12345); // Fixed seed for determinism
+  });
+  
+  describe('initialization', () => {
+    it('should initialize with default state', () => {
+      const state = game.getState();
+      expect(state.serenity).toBe(GameConfig.MAX_SERENITY);
+      expect(state.focus).toBe(GameConfig.MAX_FOCUS);
+      expect(state.insight).toBe(0);
+      expect(state.wave).toBe(1);
+      expect(state.gameOver).toBe(false);
+    });
+    
+    it('should use provided seed for deterministic behavior', () => {
+      const game1 = new Game(1920, 1080, 12345);
+      const game2 = new Game(1920, 1080, 12345);
+      
+      // Both games should have same initial state
+      expect(game1.getState().randomSeed).toBe(game2.getState().randomSeed);
+    });
+  });
+  
+  describe('update', () => {
+    it('should update wave timer', () => {
+      const initialState = game.getState();
+      game.update(0.016); // ~60fps
+      const updatedState = game.getState();
+      
+      expect(updatedState.waveTimer).toBeLessThan(initialState.waveTimer);
+    });
+    
+    it('should regenerate focus over time', () => {
+      // Deplete focus
+      game.useFocus(50);
+      const stateAfterDepletion = game.getState();
+      expect(stateAfterDepletion.focus).toBeLessThan(GameConfig.MAX_FOCUS);
+      
+      // Update for regeneration
+      game.update(1.0); // 1 second
+      const stateAfterRegen = game.getState();
+      expect(stateAfterRegen.focus).toBeGreaterThan(stateAfterDepletion.focus);
+    });
+  });
+  
+  describe('game over', () => {
+    it('should trigger game over when serenity reaches zero', () => {
+      // Force serenity to zero
+      game.damageSerenity(GameConfig.MAX_SERENITY);
+      
+      game.update(0.016);
+      const state = game.getState();
+      
+      expect(state.gameOver).toBe(true);
+      expect(state.serenity).toBe(0);
+    });
+  });
+});
+```
+
+### Mocking Patterns
+
+```typescript
+// src/systems/AbilitySystem.test.ts
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { AbilitySystem } from './AbilitySystem';
+import { StressorType } from '../types';
+
+describe('AbilitySystem', () => {
+  let abilitySystem: AbilitySystem;
+  
+  beforeEach(() => {
+    abilitySystem = new AbilitySystem();
+  });
+  
+  it('should activate breathe ability', () => {
+    const initialState = abilitySystem.getState();
+    abilitySystem.activateBreathe();
+    const updatedState = abilitySystem.getState();
+    
+    expect(updatedState.breathe.active).toBe(true);
+  });
+  
+  it('should consume focus when activating ability', () => {
+    const gameState = {
+      focus: 50,
+      maxFocus: 100
+    };
+    
+    const result = abilitySystem.activateRecenter(gameState);
+    
+    expect(result.success).toBe(true);
+    expect(result.newFocus).toBeLessThan(gameState.focus);
+  });
+  
+  it('should fail to activate ability with insufficient focus', () => {
+    const gameState = {
+      focus: 5,
+      maxFocus: 100
+    };
+    
+    const result = abilitySystem.activateAffirm(gameState);
+    
+    expect(result.success).toBe(false);
+    expect(result.newFocus).toBe(gameState.focus);
+  });
+});
+```
+
+## Game Balance Testing Patterns
+
+### Test Harness Implementation
+
+```typescript
+// src/testing/TestHarness.ts
+import { Game } from '../Game';
+import { GameConfig } from '../GameConfig';
+
+export interface TestResult {
+  serenityCollapsedByWave15: boolean;
+  waveReached: number;
+  duration: number;
+  averageFPS: number;
+  noInterludes: boolean;
+}
+
+export class TestHarness {
+  async runBalanceTest(seed: number = 12345): Promise<TestResult> {
+    const game = new Game(1920, 1080, seed);
+    let waveReached = 0;
+    let serenityCollapsed = false;
+    let frameCount = 0;
+    let totalTime = 0;
+    let lastWaveTransition = 0;
+    let interludesDetected = false;
+    
+    // Simulate 20 waves at accelerated pace
+    game.setPace(10.0); // 10x speed
+    
+    const startTime = performance.now();
+    
+    for (let wave = 1; wave <= 20; wave++) {
+      const waveStartTime = performance.now();
+      
+      while (game.getState().wave === wave && !game.getState().gameOver) {
+        const frameStart = performance.now();
+        game.update(0.016); // ~60fps simulation
+        const frameEnd = performance.now();
+        
+        frameCount++;
+        totalTime += frameEnd - frameStart;
+        
+        // Check for interludes (gap between waves)
+        if (game.getState().wave > wave) {
+          const transitionTime = performance.now() - waveStartTime;
+          if (transitionTime > 0.1) { // More than 100ms gap
+            interludesDetected = true;
+          }
+        }
+      }
+      
+      if (game.getState().gameOver) {
+        waveReached = game.getState().wave;
+        serenityCollapsed = true;
+        break;
+      }
+    }
+    
+    const duration = (performance.now() - startTime) / 1000;
+    const averageFPS = frameCount / (totalTime / 1000);
+    
+    return {
+      serenityCollapsedByWave15: serenityCollapsed && waveReached <= 15,
+      waveReached,
+      duration,
+      averageFPS,
+      noInterludes: !interludesDetected
+    };
+  }
+  
+  async runPerformanceTest(): Promise<{ averageFPS: number; minFPS: number }> {
+    const game = new Game(1920, 1080);
+    let frameCount = 0;
+    let totalTime = 0;
+    let minFPS = Infinity;
+    const fpsSamples: number[] = [];
+    
+    const startTime = performance.now();
+    let lastFpsUpdate = startTime;
+    
+    // Run for 60 seconds of game time
+    while (performance.now() - startTime < 60000) {
+      const frameStart = performance.now();
+      game.update(0.016);
+      const frameEnd = performance.now();
+      
+      frameCount++;
+      totalTime += frameEnd - frameStart;
+      
+      // Calculate FPS every second
+      if (frameEnd - lastFpsUpdate >= 1000) {
+        const fps = frameCount / ((frameEnd - lastFpsUpdate) / 1000);
+        fpsSamples.push(fps);
+        minFPS = Math.min(minFPS, fps);
+        frameCount = 0;
+        lastFpsUpdate = frameEnd;
+      }
+    }
+    
+    const averageFPS = fpsSamples.reduce((a, b) => a + b, 0) / fpsSamples.length;
+    
+    return { averageFPS, minFPS };
+  }
+}
+```
+
+### Balance Test Execution
+
+```typescript
+// src/testing/TestHarness.test.ts
+import { describe, it, expect } from 'vitest';
+import { TestHarness } from './TestHarness';
+
+describe('TestHarness', () => {
+  const harness = new TestHarness();
+  
+  it('should validate serenity collapses by wave 15', async () => {
+    const result = await harness.runBalanceTest(12345);
+    
+    expect(result.serenityCollapsedByWave15).toBe(true);
+    expect(result.waveReached).toBeLessThanOrEqual(15);
+  });
+  
+  it('should validate no interludes between waves', async () => {
+    const result = await harness.runBalanceTest(12345);
+    
+    expect(result.noInterludes).toBe(true);
+  });
+  
+  it('should validate performance targets', async () => {
+    const result = await harness.runPerformanceTest();
+    
+    expect(result.averageFPS).toBeGreaterThanOrEqual(58);
+    expect(result.minFPS).toBeGreaterThanOrEqual(55);
+  });
+  
+  it('should validate game duration', async () => {
+    const result = await harness.runBalanceTest(12345);
+    
+    // At 10x speed, 15-20 minutes becomes 1.5-2 minutes
+    const expectedMin = 1.5 * 60; // 90 seconds
+    const expectedMax = 2.0 * 60; // 120 seconds
+    
+    expect(result.duration).toBeGreaterThanOrEqual(expectedMin);
+    expect(result.duration).toBeLessThanOrEqual(expectedMax);
+  });
+});
+```
+
+## Integration Testing Patterns
+
+### System Integration Tests
+
+```typescript
+// src/integration/GameSystems.test.ts
+import { describe, it, expect, beforeEach } from 'vitest';
+import { Game } from '../Game';
+import { StressorSystem } from '../systems/StressorSystem';
+import { AbilitySystem } from '../systems/AbilitySystem';
+
+describe('Game Systems Integration', () => {
+  let game: Game;
+  
+  beforeEach(() => {
+    game = new Game(1920, 1080, 12345);
+  });
+  
+  it('should integrate stressor and ability systems', () => {
+    const state = game.getState();
+    
+    // Spawn stressors
+    game.update(1.0);
+    const stateAfterSpawn = game.getState();
+    
+    // Activate ability
+    game.activateBreathe();
+    game.update(0.5);
+    const stateAfterAbility = game.getState();
+    
+    // Verify systems interacted
+    expect(stateAfterAbility.focus).toBeLessThan(stateAfterSpawn.focus);
+  });
+  
+  it('should handle wave transitions correctly', () => {
+    // Complete wave 1
+    while (game.getState().wave === 1) {
+      game.update(0.016);
+    }
+    
+    const state = game.getState();
+    expect(state.wave).toBe(2);
+    expect(state.waveTimer).toBeGreaterThan(0);
+  });
+});
+```
+
+## Performance Testing Patterns
+
+### Frame Rate Validation
+
+```typescript
+// src/testing/Performance.test.ts
+import { describe, it, expect } from 'vitest';
+import { Game } from '../Game';
+import { Renderer } from '../rendering/Renderer';
+
+describe('Performance', () => {
+  it('should maintain 60 FPS target', async () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1920;
+    canvas.height = 1080;
+    
+    const game = new Game(canvas.width, canvas.height);
+    const renderer = new Renderer(canvas);
+    
+    const frameTimes: number[] = [];
+    const startTime = performance.now();
+    let lastFrameTime = startTime;
+    
+    // Run for 5 seconds
+    while (performance.now() - startTime < 5000) {
+      const currentTime = performance.now();
+      const deltaTime = (currentTime - lastFrameTime) / 1000;
+      lastFrameTime = currentTime;
+      
+      game.update(deltaTime);
+      renderer.render(game.getState());
+      
+      frameTimes.push(deltaTime);
+    }
+    
+    const averageFrameTime = frameTimes.reduce((a, b) => a + b, 0) / frameTimes.length;
+    const averageFPS = 1 / averageFrameTime;
+    
+    expect(averageFPS).toBeGreaterThanOrEqual(58);
+  });
+});
+```
+
+## Test Configuration
+
+### Vitest Configuration
+
+```typescript
+// vitest.config.ts
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      exclude: [
+        'node_modules/',
+        'dist/',
+        '**/*.test.ts',
+        '**/*.spec.ts'
+      ]
+    }
+  }
+});
+```
+
+### Test Execution Commands
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm test -- --watch
+
+# Run tests with coverage
+npm test -- --coverage
+
+# Run specific test file
+npm test -- Game.test.ts
+
+# Run tests matching pattern
+npm test -- -t "should update wave timer"
+
+# Run tests in verbose mode
+npm test -- --reporter=verbose
+```
+
+## Solo Testing Quality Gates
+
+### Coverage Requirements (Simplified)
+
+- **Unit Tests**: Basic functionality works (individual functions/classes)
+- **Integration Tests**: Systems work together correctly
+- **Game Balance Tests**: Game mechanics match specification
+- **Performance Tests**: Critical paths meet performance requirements
+
+### Performance Requirements (Relaxed)
+
+- **Unit Tests**: < 1 second per test
+- **Integration Tests**: < 5 seconds per test
+- **Game Balance Tests**: < 30 seconds per test
+- **Performance Tests**: < 10 seconds per test
+
+### Quality Standards (Solo)
+
+- **Test Isolation**: Tests don't depend on each other
+- **Deterministic**: Tests produce consistent results (use fixed seeds)
+- **Fast Feedback**: Quick test execution for development
+- **Essential Coverage**: Critical paths covered
+- **Maintainable**: Tests are easy to understand and modify
+
+### Industry Standards Integration (Solo-Implemented)
+
+**Enhanced Test Considerations:**
+- **Performance Testing**: Critical path performance validation (60 FPS)
+- **Game Balance Testing**: Validate game mechanics match specification
+- **Coverage Testing**: Code coverage analysis for critical paths
+- **Deterministic Testing**: Use fixed seeds for reproducible tests
+
+**Industry Standards Checklist:**
+- [ ] Unit tests pass
+- [ ] Integration tests pass
+- [ ] Game balance tests pass (serenity collapses by wave 15)
+- [ ] Performance tests pass (60 FPS target)
+- [ ] Tests are deterministic (fixed seeds)

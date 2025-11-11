@@ -1,0 +1,315 @@
+---
+globs: "**/*.md"
+description: Documentation standards and verification requirements
+---
+
+# Solo Documentation Standards
+
+## Markdown Standards
+
+### Heading Hierarchy
+
+Use proper Markdown heading hierarchy (`#`, `##`, `###`) for clear document structure:
+
+```markdown
+# Main Title
+
+## Section Title
+
+### Subsection Title
+
+#### Detail Title
+```
+
+### Line Length and Formatting
+
+- **Line length**: Wrap lines around 100 characters for readability
+- **Code blocks**: Use fenced code blocks with language hints
+- **Links**: Use relative links (e.g., `../docs/FILE.md`)
+- **Lists**: Use consistent bullet points and numbering
+
+### Code Block Standards
+
+```markdown
+# Use language hints for syntax highlighting
+```typescript
+function processGameState(state: GameState): void {
+  // Process game state
+  updateSystems(state);
+}
+```
+
+```bash
+# Use bash for shell commands
+npm test
+npm run lint
+npm run dev
+```
+
+```json
+# Use json for configuration files
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "ES2020"
+  }
+}
+```
+
+## Documentation Structure
+
+### Required Documentation Files (Simplified)
+
+- **README.md**: Project overview and quick start
+- **docs/ARCHITECTURE.md**: System architecture for AI understanding
+- **PR descriptions**: Detailed explanation of changes and rationale
+
+### Documentation Organization (Simplified)
+
+```
+docs/
+├── ARCHITECTURE.md          # System architecture for AI context
+├── README.md                # Project overview and setup
+└── proposals/               # Architecture proposals (when needed)
+    └── major-changes.md
+```
+
+### Industry Documentation Standards (Solo-Optimized)
+
+**Documentation Best Practices:**
+- **Living Documentation**: Keep docs in sync with code
+- **Type Documentation**: JSDoc comments for TypeScript functions
+- **Architecture Decision Records**: Document architectural decisions
+- **Game Design Documentation**: Document game mechanics and balance
+
+**Industry Standards Integration:**
+- **Type Documentation**: JSDoc comments for all public APIs
+- **Security Documentation**: Document security considerations
+- **Performance Documentation**: Document performance requirements (60 FPS target)
+- **Architecture Documentation**: Document design decisions
+
+## Content Standards for Solo Development
+
+### README.md Requirements (Simplified)
+
+```markdown
+# Meditative Idle Defense
+
+## Quick Start
+
+```bash
+# Clone and setup
+git clone <repository>
+cd meditative-idle-defense
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+```
+
+## Game Systems
+
+- **Serenity**: Emotional equilibrium (decreases when stressors reach center)
+- **Focus**: Energy reserve that regenerates and is spent on abilities
+- **Insight**: Temporary currency gained from resolving stressors
+- **Wave System**: Continuous wave progression with no interludes
+- **Abilities**: Breathe, Recenter, and Affirm abilities
+
+## Architecture
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for system design.
+```
+
+### PR Description Standards
+
+```markdown
+## Feature: [Brief Description]
+
+### Changes Made
+- [List of key changes]
+- [Architecture decisions]
+- [Integration points]
+
+### Rationale
+- [Why these changes were made]
+- [How they fit into existing patterns]
+- [Expected outcomes]
+
+### Testing
+- [Basic functionality tested]
+- [Integration points verified]
+- [Manual testing completed]
+```
+
+### Workflow Documentation Standards
+
+#### Workflow Pattern Documentation
+```markdown
+## Workflow Changes
+
+### Cancellation Patterns
+- [ ] Replaced `if: always()` with `if: ${{ !cancelled() }}`
+- [ ] Added step-level timeouts to long-running operations
+- [ ] Implemented emergency cleanup on cancellation
+- [ ] Added resource cleanup with cancellation awareness
+
+### Timeout Strategy
+- [ ] Job-level timeouts: [X minutes]
+- [ ] Step-level timeouts: [X minutes for specific steps]
+- [ ] Emergency cleanup timeout: [1-2 minutes]
+
+### Resource Management
+- [ ] Emergency cleanup prevents resource waste
+- [ ] Cancelled workflows stop consuming GitHub Actions minutes
+- [ ] Docker cleanup runs on cancellation
+```
+
+#### Workflow Architecture Documentation
+```markdown
+## Workflow Architecture
+
+### Multi-Tier Build Pipeline
+```
+Foundation → Tier 1 → Tier 2 → Tier 3 → Services → Smoke Tests
+```
+
+### Cancellation Flow
+```
+User Cancels → Emergency Cleanup → Resource Cleanup → Workflow Stops
+```
+
+### Timeout Hierarchy
+- Foundation builds: 15-20 minutes
+- Tier builds: 20-30 minutes  
+- Service builds: 25-40 minutes
+- Emergency cleanup: 1-2 minutes
+```
+
+### Industry Standards Documentation (Solo-Implemented)
+
+**Enhanced PR Description Template:**
+```markdown
+## Feature: [Brief Description]
+
+### Changes Made
+- [List of key changes]
+- [Architecture decisions]
+- [Integration points]
+- [Security considerations]
+- [Performance implications]
+
+### Industry Standards Compliance
+- [ ] OWASP Top 10 addressed
+- [ ] Performance requirements met
+- [ ] Security scanning passed
+- [ ] Code quality standards met
+
+### Testing
+- [Basic functionality tested]
+- [Integration points verified]
+- [Security testing completed]
+- [Performance testing completed]
+```
+
+### Architecture Documentation
+
+```markdown
+## Game Loop Pipeline
+
+```
+User Input → Game Update → System Updates → Rendering → Audio Update → Display
+```
+
+### System Dependencies
+
+- **Game** depends on: StressorSystem, AbilitySystem
+- **Renderer** depends on: Game state
+- **AudioSystem** depends on: Game state
+- **UI** depends on: Game state
+```
+
+## Documentation Verification (Simplified)
+
+### Manual Verification Checklist
+
+- [ ] README.md has proper setup instructions
+- [ ] Architecture docs are current
+- [ ] PR descriptions explain changes clearly
+- [ ] Code blocks have language hints
+- [ ] Links are relative and working
+
+## Content Guidelines for Solo Development
+
+### Writing Style
+
+- **Clear and concise**: Avoid unnecessary jargon
+- **Technical accuracy**: Verify all technical details
+- **Up-to-date**: Keep documentation current with code changes
+- **AI-focused**: Write for AI understanding and context
+
+### Code Examples
+
+```markdown
+# Good: Complete, runnable examples
+```typescript
+import { Game } from './Game';
+import { GameConfig } from './GameConfig';
+
+const game = new Game(1920, 1080);
+game.update(0.016); // Update at 60fps
+const state = game.getState();
+console.log('Wave:', state.wave, 'Serenity:', state.serenity);
+```
+
+# Bad: Incomplete examples
+```typescript
+game.update(dt);  // Missing imports and setup
+```
+```
+
+### Link Standards
+
+```markdown
+# Use relative links for internal documentation
+[Architecture Guide](docs/ARCHITECTURE.md)
+
+# Use absolute links for external resources
+[FastAPI Documentation](https://fastapi.tiangolo.com/)
+[Docker Compose](https://docs.docker.com/compose/)
+```
+
+## Documentation Maintenance (Simplified)
+
+### Update Requirements
+
+When making code changes, update relevant documentation:
+
+- **Architecture changes**: Update `docs/ARCHITECTURE.md`
+- **New features**: Update `README.md` if needed
+- **PR descriptions**: Always include detailed explanations
+
+### Version Control
+
+- **Commit messages**: Include documentation updates in commits
+- **Pull requests**: Review documentation changes
+- **PR descriptions**: Document rationale and changes
+
+## Quality Gates (Simplified)
+
+### Documentation Standards
+
+- **Essential completeness**: Core functionality documented
+- **Accuracy**: Documentation matches implementation
+- **Clarity**: Clear and understandable content
+- **AI context**: Documentation helps AI understand the system
+
+### Verification Tools
+
+- **Markdown linting**: Check markdown syntax
+- **Link checking**: Verify all links work
+- **Format validation**: Ensure consistent formatting

@@ -1,0 +1,35 @@
+{
+    "terminal.integrated.defaultProfile.linux": "bash",
+    "terminal.integrated.inheritEnv": true,
+    "terminal.integrated.detectLocale": "auto",
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "typescript.enablePromptUseWorkspaceTsdk": true,
+    "typescript.preferences.importModuleSpecifier": "relative",
+    "typescript.updateImportsOnFileMove.enabled": "always",
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "[typescript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+            "source.fixAll.eslint": "explicit"
+        }
+    },
+    "[javascript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+            "source.fixAll.eslint": "explicit"
+        }
+    },
+    "[json]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "files.exclude": {
+        "**/node_modules": true,
+        "**/dist": true
+    },
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/dist": true,
+        "**/package-lock.json": true
+    }
+}

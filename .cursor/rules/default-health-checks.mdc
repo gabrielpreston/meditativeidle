@@ -1,0 +1,336 @@
+---
+globs: "src/**/Game.ts,src/**/GameConfig.ts,src/testing/**/*.ts"
+description: Game state validation and health check requirements
+---
+
+# Solo Game State Validation
+
+## Basic Game State Validation Standards
+
+All game systems must implement simple state validation for solo development:
+
+### Basic State Validation
+
+- **Game State Integrity**: Validate game state is consistent and valid
+- **Performance Monitoring**: Track FPS and adapt if needed
+- **Game Balance Validation**: Ensure game mechanics work as specified
+
+### Simple Implementation
+
+- **Basic functionality**: Game state is valid and consistent
+- **No complex metrics**: Keep it simple
+- **No extensive dependency checking**: Focus on core functionality
+
+### Industry Game State Validation Standards (Solo-Optimized)
+
+**Game State Validation Best Practices:**
+- **State Consistency**: Validate game state is internally consistent
+- **Performance Monitoring**: Track FPS and adapt rendering
+- **Game Balance**: Validate game mechanics match specification
+- **Error Recovery**: Graceful handling of invalid states
+
+**Industry Standards Integration:**
+- **State Validation**: Validate game state at critical points
+- **Performance Monitoring**: Track and report performance metrics
+- **Game Balance Testing**: Validate game mechanics match specification
+- **Error Handling**: Graceful degradation on errors
+
+## Simple Implementation Pattern
+
+### Basic Game State Validation
+
+```typescript
+// src/Game.ts
+export class Game {
+  private state: GameState;
+  
+  update(deltaTime: number): void {
+    // Validate deltaTime
+    if (deltaTime <= 0 || deltaTime > 1.0) {
+      console.warn('Invalid deltaTime, clamping:', deltaTime);
+      deltaTime = Math.min(Math.max(deltaTime, 0), 1.0);
+    }
+    
+    // Validate state before update
+    if (!this.validateState()) {
+      console.error('Invalid game state detected');
+      return;
+    }
+    
+    // Update systems
+    this.stressorSystem.update(deltaTime, this.state);
+    this.abilitySystem.update(deltaTime, this.state);
+    
+    // Validate state after update
+    if (!this.validateState()) {
+      console.error('Invalid game state after update');
+      this.recoverFromInvalidState();
+    }
+  }
+  
+  private validateState(): boolean {
+    return (
+      this.state.serenity >= 0 &&
+      this.state.serenity <= this.state.maxSerenity &&
+      this.state.focus >= 0 &&
+      this.state.focus <= this.state.maxFocus &&
+      this.state.wave >= 0 &&
+      this.state.waveTimer >= 0 &&
+      this.state.pace > 0 &&
+      this.state.pace <= 10.0
+    );
+  }
+  
+  private recoverFromInvalidState(): void {
+    // Clamp values to valid ranges
+    this.state.serenity = Math.max(0, Math.min(this.state.serenity, this.state.maxSerenity));
+    this.state.focus = Math.max(0, Math.min(this.state.focus, this.state.maxFocus));
+    this.state.wave = Math.max(0, this.state.wave);
+    this.state.waveTimer = Math.max(0, this.state.waveTimer);
+    this.state.pace = Math.max(0.1, Math.min(this.state.pace, 10.0));
+  }
+}
+```
+
+### Performance Monitoring
+
+```typescript
+// src/main.ts
+class GameApp {
+  private fps: number = 60;
+  private performanceMode: boolean = false;
+  
+  private animate = (currentTime: number): void => {
+    const deltaTime = (currentTime - this.lastFrameTime) / 1000;
+    this.lastFrameTime = currentTime;
+    
+    // Update FPS tracking
+    this.updateFPS(currentTime);
+    
+    // Adaptive performance mode
+    if (this.fps < GameConfig.PERFORMANCE_THRESHOLD && !this.performanceMode) {
+      this.performanceMode = true;
+      this.enablePerformanceMode();
+      console.warn('[Performance] Performance mode activated', { fps: this.fps });
+    } else if (this.fps >= GameConfig.TARGET_FPS && this.performanceMode) {
+      this.performanceMode = false;
+      this.disablePerformanceMode();
+      console.log('[Performance] Performance mode deactivated', { fps: this.fps });
+    }
+    
+    // Update and render
+    this.game.update(deltaTime);
+    this.renderer.render(this.game.getState());
+    
+    requestAnimationFrame(this.animate);
+  };
+  
+  private updateFPS(currentTime: number): void {
+    this.frameCount++;
+    if (currentTime - this.lastFpsUpdate >= 1000) {
+      this.fps = this.frameCount;
+      this.frameCount = 0;
+      this.lastFpsUpdate = currentTime;
+    }
+  }
+  
+  private enablePerformanceMode(): void {
+    // Reduce particle effects
+    // Simplify rendering
+    // Lower update frequency for non-critical systems
+  }
+}
+```
+
+## Game Balance Validation
+
+### Test Harness Implementation
+
+```typescript
+// src/testing/TestHarness.ts
+export class TestHarness {
+  async validateGameBalance(seed: number = 12345): Promise<BalanceValidationResult> {
+    const game = new Game(1920, 1080, seed);
+    let waveReached = 0;
+    let serenityCollapsed = false;
+    
+    // Simulate 20 waves at accelerated pace
+    game.setPace(10.0); // 10x speed
+    
+    for (let wave = 1; wave <= 20; wave++) {
+      while (game.getState().wave === wave && !game.getState().gameOver) {
+        game.update(0.016); // ~60fps simulation
+      }
+      
+      if (game.getState().gameOver) {
+        waveReached = game.getState().wave;
+        serenityCollapsed = true;
+        break;
+      }
+    }
+    
+    return {
+      serenityCollapsedByWave15: serenityCollapsed && waveReached <= 15,
+      waveReached,
+      isValid: serenityCollapsed && waveReached <= 15
+    };
+  }
+}
+```
+
+## Simple Game State Validation Best Practices
+
+### Basic State Validation Requirements
+
+- **State Consistency**: Validate game state is internally consistent
+- **Performance Monitoring**: Track FPS and adapt rendering
+- **Game Balance**: Validate game mechanics match specification
+- **Error Recovery**: Graceful handling of invalid states
+
+## System-Specific Validation
+
+### Game State Validation
+
+```typescript
+// src/Game.ts
+class Game {
+  private validateState(): boolean {
+    // Validate serenity
+    if (this.state.serenity < 0 || this.state.serenity > this.state.maxSerenity) {
+      console.error('[Validation] Invalid serenity:', this.state.serenity);
+      return false;
+    }
+    
+    // Validate focus
+    if (this.state.focus < 0 || this.state.focus > this.state.maxFocus) {
+      console.error('[Validation] Invalid focus:', this.state.focus);
+      return false;
+    }
+    
+    // Validate wave
+    if (this.state.wave < 0) {
+      console.error('[Validation] Invalid wave:', this.state.wave);
+      return false;
+    }
+    
+    // Validate wave timer
+    if (this.state.waveTimer < 0) {
+      console.error('[Validation] Invalid wave timer:', this.state.waveTimer);
+      return false;
+    }
+    
+    // Validate pace
+    if (this.state.pace <= 0 || this.state.pace > 10.0) {
+      console.error('[Validation] Invalid pace:', this.state.pace);
+      return false;
+    }
+    
+    return true;
+  }
+}
+```
+
+### Stressor System Validation
+
+```typescript
+// src/systems/StressorSystem.ts
+class StressorSystem {
+  validateStressors(): boolean {
+    // Validate all stressors are within bounds
+    for (const stressor of this.getStressors()) {
+      if (stressor.health < 0 || stressor.health > stressor.maxHealth) {
+        console.error('[Validation] Invalid stressor health:', stressor);
+        return false;
+      }
+      
+      if (stressor.position.x < 0 || stressor.position.x > this.width ||
+          stressor.position.y < 0 || stressor.position.y > this.height) {
+        console.error('[Validation] Invalid stressor position:', stressor);
+        return false;
+      }
+    }
+    
+    return true;
+  }
+}
+```
+
+### Ability System Validation
+
+```typescript
+// src/systems/AbilitySystem.ts
+class AbilitySystem {
+  validateAbilities(state: GameState): boolean {
+    // Validate ability states
+    if (state.focus < 0 || state.focus > state.maxFocus) {
+      console.error('[Validation] Invalid focus for ability:', state.focus);
+      return false;
+    }
+    
+    // Validate ability cooldowns
+    if (this.breatheCooldown < 0 || this.recenterCooldown < 0 || this.affirmCooldown < 0) {
+      console.error('[Validation] Invalid ability cooldowns');
+      return false;
+    }
+    
+    return true;
+  }
+}
+```
+
+## Quality Gates (Simplified)
+
+### Game State Validation Requirements
+
+- **State Consistency**: Game state is internally consistent
+- **Performance Monitoring**: FPS is tracked and reported
+- **Game Balance**: Game mechanics match specification
+- **Error Recovery**: Invalid states are handled gracefully
+
+### Industry Standards Game State Validation (Solo-Implemented)
+
+**Enhanced Game State Validation Implementation:**
+```typescript
+export class GameStateValidator {
+  validate(state: GameState): ValidationResult {
+    const errors: string[] = [];
+    
+    // Validate serenity
+    if (state.serenity < 0 || state.serenity > state.maxSerenity) {
+      errors.push(`Invalid serenity: ${state.serenity} (expected 0-${state.maxSerenity})`);
+    }
+    
+    // Validate focus
+    if (state.focus < 0 || state.focus > state.maxFocus) {
+      errors.push(`Invalid focus: ${state.focus} (expected 0-${state.maxFocus})`);
+    }
+    
+    // Validate wave
+    if (state.wave < 0) {
+      errors.push(`Invalid wave: ${state.wave} (expected >= 0)`);
+    }
+    
+    // Validate wave timer
+    if (state.waveTimer < 0) {
+      errors.push(`Invalid wave timer: ${state.waveTimer} (expected >= 0)`);
+    }
+    
+    // Validate pace
+    if (state.pace <= 0 || state.pace > 10.0) {
+      errors.push(`Invalid pace: ${state.pace} (expected 0.1-10.0)`);
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  }
+}
+```
+
+**Industry Standards Checklist:**
+- [ ] State validation implemented
+- [ ] Performance monitoring implemented
+- [ ] Game balance validation implemented
+- [ ] Error recovery implemented
+- [ ] Validation logging implemented

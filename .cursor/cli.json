@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Shell(npm run dev)",
+      "Shell(npm run build)",
+      "Shell(npm run preview)",
+      "Shell(npm test)",
+      "Shell(npm run lint)",
+      "Shell(npm run type-check)",
+      "Shell(npm install)",
+      "Shell(npm ci)",
+      "Shell(npx tsc --noEmit)",
+      "Shell(npx vite build)",
+      "Shell(npx vite)",
+      "Shell(git commit)",
+      "Shell(git push)",
+      "Shell(git pull)"
+    ],
+    "deny": []
+  }
+}
