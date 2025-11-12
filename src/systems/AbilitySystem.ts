@@ -4,6 +4,15 @@ import { distance } from '../utils/MathUtils';
 import { ISystem, SystemContext } from './ISystem';
 import { AbilityBranchConfig } from './AbilityBranches';
 
+/**
+ * AbilitySystem - Core ability mechanics implementation
+ * 
+ * Manages all player abilities, their activation patterns, cooldowns, and effects.
+ * 
+ * Design Reference: docs/design/ABILITIES.md
+ * Config Definitions: src/config/AbilityDefinitions.ts
+ * Architecture Notes: docs/architecture/ABILITY_SYSTEM.md
+ */
 export class AbilitySystem implements ISystem {
   private abilities: AbilityState;
   private breatheHeld: boolean = false;
@@ -57,6 +66,10 @@ export class AbilitySystem implements ISystem {
   private alignPhase: 'offense' | 'defense' = 'offense';
 
   constructor() {
+    // Initialize ability state
+    // Note: Ability definitions and design specs are in:
+    // - src/config/AbilityDefinitions.ts (structured config)
+    // - docs/design/ABILITIES.md (design specifications)
     this.abilities = {
       breathe: {
         name: 'Breathe',

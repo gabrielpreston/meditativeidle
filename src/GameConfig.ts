@@ -143,7 +143,7 @@ export const GameConfig = {
   UPGRADE_COST_MULTIPLIER: 1.5,
   
   // Visual
-  CENTER_RADIUS: 20,
+  CENTER_RADIUS: 80, // Doubled from 40 to 80
   PLAYFIELD_PADDING: 50,
   BLOOM_INTENSITY: 0.3,
   
