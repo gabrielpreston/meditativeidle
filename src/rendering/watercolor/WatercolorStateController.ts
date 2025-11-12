@@ -1,14 +1,8 @@
-import { WatercolorUniforms } from './WatercolorPass';
-
 type AffectState = 'calm' | 'focus' | 'overwhelm' | 'recovery';
 
 interface StatePreset {
-  edgeDarkeningIntensity: number;
-  bleedRadius: number;
   diffusionRate: number;
-  pigmentSaturation: number;
   wetness: number;
-  toonThreshold: number;
 }
 
 export class WatercolorStateController {
@@ -20,36 +14,20 @@ export class WatercolorStateController {
   
   private presets: Record<AffectState, StatePreset> = {
     calm: {
-      edgeDarkeningIntensity: 0.1,
-      bleedRadius: 1.0,
       diffusionRate: 0.2,
-      pigmentSaturation: 0.8,
-      wetness: 0.5,
-      toonThreshold: 0.3
+      wetness: 0.5
     },
     focus: {
-      edgeDarkeningIntensity: 0.3,
-      bleedRadius: 2.0,
       diffusionRate: 0.5,
-      pigmentSaturation: 1.0,
-      wetness: 0.7,
-      toonThreshold: 0.5
+      wetness: 0.7
     },
     overwhelm: {
-      edgeDarkeningIntensity: 0.6,
-      bleedRadius: 4.0,
       diffusionRate: 0.8,
-      pigmentSaturation: 0.6,
-      wetness: 0.9,
-      toonThreshold: 0.2
+      wetness: 0.9
     },
     recovery: {
-      edgeDarkeningIntensity: 0.2,
-      bleedRadius: 1.5,
       diffusionRate: 0.3,
-      pigmentSaturation: 0.9,
-      wetness: 0.6,
-      toonThreshold: 0.4
+      wetness: 0.6
     }
   };
   
@@ -95,42 +73,55 @@ export class WatercolorStateController {
     
     // Lerp current preset toward target preset
     this.currentPreset = {
-      edgeDarkeningIntensity: this.lerp(
-        this.currentPreset.edgeDarkeningIntensity,
-        this.targetPreset.edgeDarkeningIntensity
-      ),
-      bleedRadius: this.lerp(
-        this.currentPreset.bleedRadius,
-        this.targetPreset.bleedRadius
-      ),
       diffusionRate: this.lerp(
         this.currentPreset.diffusionRate,
         this.targetPreset.diffusionRate
       ),
-      pigmentSaturation: this.lerp(
-        this.currentPreset.pigmentSaturation,
-        this.targetPreset.pigmentSaturation
-      ),
       wetness: this.lerp(
         this.currentPreset.wetness,
         this.targetPreset.wetness
-      ),
-      toonThreshold: this.lerp(
-        this.currentPreset.toonThreshold,
-        this.targetPreset.toonThreshold
       )
     };
   }
   
-  getUniforms(): Partial<WatercolorUniforms> {
-    return {
-      edgeDarkeningIntensity: this.currentPreset.edgeDarkeningIntensity,
-      bleedRadius: this.currentPreset.bleedRadius,
-      diffusionRate: this.currentPreset.diffusionRate,
-      pigmentSaturation: this.currentPreset.pigmentSaturation,
-      wetness: this.currentPreset.wetness,
-      toonThreshold: this.currentPreset.toonThreshold
-    };
+  /**
+   * Get diffusion rate for UI fluid field intensity.
+   * Higher values = more pronounced flow in UI elements.
+   */
+  getDiffusionRate(): number {
+    return this.currentPreset.diffusionRate;
+  }
+  
+  // Fluid simulation parameter getters
+  // High serenity (calm) → Low viscosity, slow dissipation, less curl
+  getViscosity(): number {
+    const wetness = this.currentPreset.wetness;
+    return 0.0008 + (1 - wetness) * 0.001; // 0.0008 to 0.0018
+  }
+  
+  getDyeDissipation(): number {
+    const wetness = this.currentPreset.wetness;
+    return 0.9 + wetness * 0.07; // 0.9 to 0.97
+  }
+  
+  getVelocityDissipation(): number {
+    const wetness = this.currentPreset.wetness;
+    return 0.93 + wetness * 0.05; // 0.93 to 0.98
+  }
+  
+  getCurl(): number {
+    const wetness = this.currentPreset.wetness;
+    return 15 + (1 - wetness) * 20; // 15 to 35
+  }
+  
+  getPressureIters(): number {
+    const wetness = this.currentPreset.wetness;
+    return Math.round(12 + (1 - wetness) * 10); // 12 to 22
+  }
+  
+  getRefractionScale(): number {
+    const wetness = this.currentPreset.wetness;
+    return 0.003 + (1 - wetness) * 0.003; // 0.003 to 0.006
   }
   
   private lerp(a: number, b: number): number {

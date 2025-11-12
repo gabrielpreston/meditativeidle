@@ -7,7 +7,7 @@ Conduct a deep analysis of the correctness/validity of the proposed plan, presen
 ## Steps
 
 -  **Mark Plan Status Being Analyzed**
-   -  Use the `date` command to determine today's date in YYYY-MM-DD format
+   -  Use the `date` command to determine today's date and time in YYYY-MM-DD HH:mm format
    -  Update the plan status with today's date and noting it is Being Analyzed
 -  **Analyze proposed plan**
    -  Read in the contents of the attached proposed plan (ensure not operating on a cached version).

@@ -126,11 +126,12 @@ See [COLOR_PALETTE.md](./COLOR_PALETTE.md) for detailed color mappings.
 
 ## Integration with Existing Systems
 
-This project already has a `WatercolorStateController` and `WatercolorPass` system. The art direction should integrate with:
+This project uses a fluid simulation system for liquid watercolor effects. The art direction integrates with:
 
-- `src/rendering/watercolor/WatercolorStateController.ts` - Controls global watercolor state
-- `src/rendering/watercolor/WatercolorPass.ts` - Post-processing watercolor effects
-- `src/rendering/scenes/AbilityEffects.ts` - Individual ability visual effects
+- `src/rendering/watercolor/WatercolorStateController.ts` - Controls global watercolor state and fluid parameters
+- `src/rendering/watercolor/FluidSim.ts` - WebGL fluid simulation (velocity, pressure, dye fields)
+- `src/rendering/watercolor/FluidCompositePass.ts` - Post-processing pass that composites fluid dye over scene
+- `src/rendering/scenes/AbilityEffects.ts` - Individual ability visual effects (dye injection)
 
-The existing system uses parameters like `edgeDarkeningIntensity`, `bleedRadius`, `diffusionRate`, `pigmentSaturation`, and `wetness` which align well with this art direction.
+The system uses fluid parameters like `viscosity`, `dyeDissipation`, `velocityDissipation`, `curl`, `pressureIters`, and `refractionScale` which are derived from the `wetness` parameter based on serenity ratio.
 

@@ -43,6 +43,8 @@ export interface AbilityScaling {
   durationPerLevel?: number;
   /** Slow strength scaling per level (multiplier) */
   slowPerLevel?: number;
+  /** Bonus strength scaling per level (multiplier) */
+  bonusStrength?: number;
 }
 
 export interface AbilityDefinition {
@@ -62,6 +64,8 @@ export interface AbilityDefinition {
     duration?: number;
     slowStrength?: number;
     amplification?: number;
+    cycleDuration?: number;
+    bonusStrength?: number;
   };
   /** Scaling configuration */
   scaling: AbilityScaling;

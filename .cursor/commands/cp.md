@@ -27,3 +27,5 @@ Before finalizing the plan, review it for:
 
 -  Provide your confidence score for each change with supporting arguments, and explicitly note where you've simplified or unified approaches based on this review.
 -  After finishing with updates to the document, include a scorecard of the initial proposal near the beginning of the document.
+-  Use the `date` command to determine today's date and time in YYYY-MM-DD HH:mm format.
+-  Add the Plan Created date to the top of the document.

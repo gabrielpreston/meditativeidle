@@ -60,8 +60,7 @@ export class WatercolorUIRenderer {
     this.initializeElements();
     
     // Update fluid field intensity from watercolor params
-    const params = this.watercolorController.getUniforms();
-    const intensity = params.diffusionRate || 0.5;
+    const intensity = this.watercolorController.getDiffusionRate();
     this.fluidField.setIntensity(intensity);
     this.fluidField.update(deltaTime);
     

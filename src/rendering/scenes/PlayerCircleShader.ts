@@ -1,6 +1,6 @@
 /**
- * Shader for the player circle that mimics watercolor paint on paper
- * Creates soft, diffused edges that simulate paint bleeding into the paper
+ * Shader for the player circle
+ * Creates soft, diffused edges
  */
 export const PlayerCircleShader = {
   vertex: `
@@ -18,10 +18,8 @@ export const PlayerCircleShader = {
     
     uniform vec3 circleColor;
     uniform float circleRadius;
-    uniform float pulseAmount; // 0.0 to 1.0, controls how much the paint has spread
-    uniform float edgeSoftness; // How soft the edges are (watercolor bleed)
-    uniform float paperTextureScale;
-    uniform sampler2D paperTexture;
+    uniform float pulseAmount; // 0.0 to 1.0, controls pulse intensity
+    uniform float edgeSoftness; // How soft the edges are
     
     varying vec2 vUv;
     varying vec3 vPosition;
@@ -37,34 +35,24 @@ export const PlayerCircleShader = {
       float normalizedRadius = 0.5; // CircleGeometry radius is 0.5 in normalized space
       float currentRadius = normalizedRadius * (1.0 + pulseAmount * 0.15);
       
-      // Create soft edge falloff (simulates watercolor bleeding)
-      // The further from center, the more the paint bleeds/diffuses
+      // Create soft edge falloff
       float edgeDistance = currentRadius - dist;
       
-      // Soft falloff using smoothstep for watercolor-like edges
-      // Edge softness controls how far the paint bleeds (larger = more bleeding)
+      // Soft falloff using smoothstep
       float bleedDistance = edgeSoftness * currentRadius;
       float alpha = smoothstep(-bleedDistance, bleedDistance * 0.3, edgeDistance);
       
-      // Simulate paint pooling at edges (darker/more intense at edges)
-      // This mimics how watercolor paint concentrates at the edge of a wet area
+      // Subtle edge intensity variation
+      // Fluid layer handles primary visual effects
       float edgeIntensity = 1.0;
       float edgePoolZone = bleedDistance * 0.5;
       if (edgeDistance < edgePoolZone && edgeDistance > -edgePoolZone) {
-        // Near the edge, increase intensity (paint pooling)
         float edgeFactor = 1.0 - abs(edgeDistance / edgePoolZone);
-        edgeIntensity = 1.0 + edgeFactor * 0.3; // 30% more intense at edges
+        edgeIntensity = 1.0 + edgeFactor * 0.1; // 10% more intense at edges
       }
       
-      // Sample paper texture for granulation (paint interacting with paper fibers)
-      vec4 paper = texture2D(paperTexture, vUv * paperTextureScale);
-      
-      // Apply paper texture granulation to color intensity
-      // Paper texture affects how paint is absorbed
-      float granulation = 0.95 + paper.r * 0.1; // Subtle variation
-      
-      // Calculate final color with watercolor properties
-      vec3 finalColor = circleColor * edgeIntensity * granulation;
+      // Calculate final color
+      vec3 finalColor = circleColor * edgeIntensity;
       
       gl_FragColor = vec4(finalColor, alpha);
     }

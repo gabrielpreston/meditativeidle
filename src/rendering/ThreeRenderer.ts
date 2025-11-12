@@ -3,8 +3,9 @@ import { EffectComposer, RenderPass } from 'postprocessing';
 import { GameState, Vector2 } from '../types';
 import { GameConfig } from '../GameConfig';
 import { GameScene } from './scenes/GameScene';
-import { WatercolorPass } from './watercolor/WatercolorPass';
 import { WatercolorStateController } from './watercolor/WatercolorStateController';
+import { FluidSim } from './watercolor/FluidSim';
+import { FluidCompositePass } from './watercolor/FluidCompositePass';
 import { WatercolorUIRenderer } from './ui/WatercolorUIRenderer';
 import { FluidStatsTable } from './ui/elements/FluidStatsTable';
 import { FluidReflectionScreen } from './ui/elements/FluidReflectionScreen';
@@ -17,6 +18,8 @@ export class ThreeRenderer {
   private composer: EffectComposer;
   private gameScene: GameScene;
   private watercolorController: WatercolorStateController;
+  private fluid: FluidSim | null = null;
+  private fluidPass: FluidCompositePass | null = null;
   private width: number;
   private height: number;
   
@@ -44,7 +47,7 @@ export class ThreeRenderer {
     });
     this.renderer.setSize(this.width, this.height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.setClearColor(0xf5f5dc, 1.0); // Set clear color to beige
+    this.renderer.setClearColor(0xf5f0ff, 1.0); // Set clear color to soft lavender-tinted white
     
     // Setup camera (orthographic for 2D-like game)
     // Use pixel-perfect mapping: camera covers exactly the canvas size
@@ -59,37 +62,20 @@ export class ThreeRenderer {
     
     // Setup scene
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0xf5f5dc); // Default background
+    this.scene.background = new THREE.Color(0xf5f0ff); // Default background - soft lavender-tinted white
     
     // Setup game scene
-    const paperTexture = this.loadPaperTexture();
-    this.gameScene = new GameScene(this.scene, this.width, this.height, paperTexture);
+    this.gameScene = new GameScene(this.scene, this.width, this.height);
     
     // Setup post-processing pipeline
     this.composer = new EffectComposer(this.renderer);
     const renderPass = new RenderPass(this.scene, this.camera);
     this.composer.addPass(renderPass);
     
-    // Setup watercolor pass (uses same paper texture)
-    // Note: Bloom effect can be added later if needed - watercolor provides visual polish
-    const watercolorPass = new WatercolorPass({
-      width: this.width,
-      height: this.height,
-      paperTexture
-    });
-    
-    // Add watercolor post-processing pass
-    this.composer.addPass(watercolorPass);
-    
-    // Debug: Check for WebGL errors
-    const gl = this.renderer.getContext();
-    const error = gl.getError();
-    if (error !== gl.NO_ERROR) {
-      console.error('WebGL error after composer setup:', error);
-    }
-    
-    // Debug: Log pass info
-    console.log('WatercolorPass added, total passes:', this.composer.passes.length);
+    // Setup fluid simulation
+    this.fluid = new FluidSim(this.width, this.height, this.renderer);
+    this.fluidPass = new FluidCompositePass(this.fluid.getDyeTexture());
+    this.composer.addPass(this.fluidPass);
     
     // CRITICAL: Set composer size - without this, it defaults to 0x0 and renders black
     this.composer.setSize(this.width, this.height);
@@ -137,21 +123,46 @@ export class ThreeRenderer {
   
   render(
     state: GameState,
-    center: Vector2
+    center: Vector2,
+    deltaTime: number = 0.016,
+    performanceMode: boolean = false
   ): void {
     const serenityRatio = state.serenity / state.maxSerenity;
     
-    // Update watercolor state controller
+    // Update watercolor state controller (for fluid parameters)
     this.watercolorController.update(serenityRatio);
-    const watercolorParams = this.watercolorController.getUniforms();
     
-    // Reduce intensity for better visibility with small circle
-    const adjustedParams = {
-      ...watercolorParams,
-      diffusionRate: (watercolorParams.diffusionRate || 0.5) * 0.3, // Reduce diffusion significantly
-      edgeDarkeningIntensity: (watercolorParams.edgeDarkeningIntensity || 0.3) * 0.5, // Reduce edge darkening
-      wetness: (watercolorParams.wetness || 0.7) * 0.5 // Reduce wetness
-    };
+    // Update fluid simulation
+    if (this.fluid && this.fluidPass) {
+      // Set performance mode
+      this.fluid.setPerformanceMode(performanceMode);
+      
+      // Update fluid parameters
+      const fluidParams = {
+        viscosity: this.watercolorController.getViscosity(),
+        dyeDissipation: this.watercolorController.getDyeDissipation(),
+        velocityDissipation: this.watercolorController.getVelocityDissipation(),
+        curl: this.watercolorController.getCurl(),
+        pressureIters: this.watercolorController.getPressureIters(),
+      };
+      
+      // Adjust for performance mode
+      if (performanceMode) {
+        fluidParams.pressureIters = Math.round(fluidParams.pressureIters * 0.5);
+        fluidParams.curl *= 0.7;
+        fluidParams.dyeDissipation *= 1.1; // Faster fade
+      }
+      
+      this.fluid.setParams(fluidParams);
+      this.fluid.step(deltaTime);
+      
+      // Update fluid composite pass uniforms
+      this.fluidPass.setUniforms({
+        dyeIntensity: 0.75 + (1 - serenityRatio) * 0.25,
+        refractionScale: this.watercolorController.getRefractionScale(),
+        blendMode: 'overlay',
+      });
+    }
     
     // Update game scene (just the center/player)
     this.gameScene.update(
@@ -159,50 +170,11 @@ export class ThreeRenderer {
       center
     );
     
-    // Get pulse data for radial wetness effect
-    const pulseData = this.gameScene.getPulseData();
-    
-    // Update watercolor pass uniforms and pulse data
-    const watercolorPass = this.composer.passes.find(p => p instanceof WatercolorPass);
-    if (watercolorPass && watercolorPass instanceof WatercolorPass) {
-      // Set pulse data for radial wetness (paint re-wetting paper)
-      watercolorPass.setPulseData(center, pulseData.radius, pulseData.phase);
-      // Set other watercolor parameters
-      watercolorPass.setUniforms(adjustedParams);
-    }
-    
     // Update scene colors based on serenity
     this.updateSceneColors(serenityRatio);
     
     // Render with post-processing
     this.composer.render();
-  }
-  
-  private loadPaperTexture(): THREE.Texture {
-    const loader = new THREE.TextureLoader();
-    // Create a simple procedural paper texture for now
-    // TODO: Replace with actual paper texture image in public/textures/
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 512;
-    const ctx = canvas.getContext('2d')!;
-    
-    // Create simple noise pattern for paper texture
-    const imageData = ctx.createImageData(512, 512);
-    for (let i = 0; i < imageData.data.length; i += 4) {
-      const noise = Math.random() * 0.3 + 0.7; // 0.7-1.0 range
-      imageData.data[i] = noise * 255;     // R
-      imageData.data[i + 1] = noise * 255; // G
-      imageData.data[i + 2] = noise * 255; // B
-      imageData.data[i + 3] = 255;         // A
-    }
-    ctx.putImageData(imageData, 0, 0);
-    
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-    texture.repeat.set(2, 2);
-    return texture;
   }
   
   private updateSceneColors(serenityRatio: number): void {
@@ -311,6 +283,14 @@ export class ThreeRenderer {
     // Resize composer
     this.composer.setSize(width, height);
     
+    // Resize fluid simulation
+    if (this.fluid) {
+      this.fluid.resize(width, height);
+    }
+    if (this.fluidPass) {
+      this.fluidPass.setSize(width, height);
+    }
+    
     // Resize UI overlay canvas
     this.uiCanvas.width = width;
     this.uiCanvas.height = height;
@@ -336,6 +316,12 @@ export class ThreeRenderer {
   }
   
   dispose(): void {
+    if (this.fluid) {
+      this.fluid.dispose();
+    }
+    if (this.fluidPass) {
+      this.fluidPass.dispose();
+    }
     this.renderer.dispose();
     this.composer.dispose();
     this.gameScene.dispose();

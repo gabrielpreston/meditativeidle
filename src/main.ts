@@ -107,7 +107,9 @@ class GameApp {
     
     this.renderer.render(
       state,
-      center
+      center,
+      deltaTime,
+      this.performanceMode
     );
     
     requestAnimationFrame(this.animate);

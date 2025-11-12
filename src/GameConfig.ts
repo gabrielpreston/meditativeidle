@@ -154,16 +154,16 @@ export const GameConfig = {
   
   // Colors (High Serenity)
   COLOR_HIGH_SERENITY: {
-    background: '#F5F5DC',
-    center: '#FFE5B4',
+    background: '#F5F0FF', // Soft lavender-tinted white (complements purple)
+    center: '#E6D5F5', // Light soft lavender
     accent: '#87CEEB',
     gold: '#FFD700'
   },
   
   // Colors (Low Serenity)
   COLOR_LOW_SERENITY: {
-    background: '#1a1a2e',
-    center: '#16213e',
+    background: '#E0F2E8', // Soft mint green (complements purple)
+    center: '#9370DB', // Deeper soft purple
     accent: '#0f3460',
     rust: '#8B4513'
   }

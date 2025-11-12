@@ -1,5 +1,5 @@
 1.  Refresh yourself on the plan's details to make sure you are up to date.
-2.  Use the `date` command to determine today's date in YYYY-MM-DD format
+2.  Use the `date` command to determine today's date and time in YYYY-MM-DD HH:mm format
 3.  Update the plan status with today's date noting it is In Progress.
 4.  Begin implementation of the plan.
 5.  Always prioritize using `npm` scripts when testing and validating changes.
