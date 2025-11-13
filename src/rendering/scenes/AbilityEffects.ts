@@ -1,51 +1,30 @@
-import * as THREE from 'three';
-import { Vector2, Stressor } from '../../types';
-import { GameConfig } from '../../GameConfig';
+import { Vector2, Stressor, RGB } from '../../types';
 import { getAbilityColor, getExhaleWaveColor, getReleaseColor } from '../watercolor/ColorPalette';
-import { getAbilityDefinition } from '../../config/AbilityDefinitions';
 import { AbilityConfig } from '../../config/AbilityConfig';
+import { FluidSim } from '../watercolor/FluidSim';
+import { RippleSystem } from '../watercolor/RippleSystem';
+import { SystemContext } from '../../systems/ISystem';
 
 /**
- * AbilityEffects - Visual effects rendering for abilities
+ * AbilityEffects - Visual effects rendering for abilities (fluid-only)
  * 
- * Uses AbilityDefinitions and ColorPalette for watercolor-style rendering.
+ * Uses fluid dye injection for watercolor-style rendering.
  * Design Reference: docs/design/ABILITIES.md
+ * Art Direction: docs/design/WATERCOLOR_ART_DIRECTION.md
  */
 export class AbilityEffects {
-  private scene: THREE.Scene;
   private width: number;
   private height: number;
+  private fluid?: FluidSim;
+  private rippleSystem?: RippleSystem;
   
-  // Aura
-  private auraMesh: THREE.Mesh | null = null;
-  
-  // Recenter pulse
-  private recenterPulseMesh: THREE.Mesh | null = null;
-  
-  // Exhale waves
-  private exhaleWaveMeshes: Map<number, THREE.Mesh> = new Map();
-  private nextWaveId: number = 0;
-  
-  // Reflect barrier
-  private reflectBarrierMesh: THREE.Mesh | null = null;
-  
-  // Mantra beam
-  private mantraBeamLine: THREE.Line | null = null;
-  
-  // Ground field
-  private groundFieldMesh: THREE.Mesh | null = null;
-  private groundFieldParticles: THREE.Points | null = null;
-  
-  // Release shockwave
-  private releaseShockwaveMesh: THREE.Mesh | null = null;
-  
-  // Affirm glow
-  private affirmGlowMesh: THREE.Mesh | null = null;
-  
-  constructor(scene: THREE.Scene, width: number, height: number) {
-    this.scene = scene;
+  constructor(width: number, height: number, fluid?: FluidSim) {
     this.width = width;
     this.height = height;
+    this.fluid = fluid;
+    if (fluid) {
+      this.rippleSystem = new RippleSystem(fluid);
+    }
   }
   
   setSize(width: number, height: number): void {
@@ -53,413 +32,478 @@ export class AbilityEffects {
     this.height = height;
   }
   
-  updateAura(
+  /**
+   * Unified update method using SystemContext
+   */
+  update(context: SystemContext, center: Vector2, deltaTime: number): void {
+    if (!this.fluid) return;
+    
+    const state = context.state;
+    const serenityRatio = state.serenity / state.maxSerenity;
+    const affirmActive = context.getAffirmAmplification() > 1.0;
+    
+    // Aura - REMOVED: No more aura visual, only breath waves
+    // if (context.isAuraActive()) {
+    //   this.updateAuraFluid(
+    //     center,
+    //     context.getBreathMaxRadius(),
+    //     serenityRatio,
+    //     context.getBreatheCycleProgress(),
+    //     affirmActive
+    //   );
+    // }
+    
+    // Recenter pulse
+    if (context.isRecenterPulseActive()) {
+      this.updateRecenterFluid(
+        center,
+        context.getRecenterPulseRadius(),
+        serenityRatio,
+        affirmActive,
+        context.getAffirmAmplification()
+      );
+    }
+    
+    // Exhale waves
+    const exhaleWaves = context.getExhaleWaves();
+    if (exhaleWaves.length > 0) {
+      this.updateExhaleFluid(center, exhaleWaves, serenityRatio);
+    }
+    
+    // Reflect barrier
+    if (context.isReflectBarrierActive()) {
+      this.updateReflectFluid(center, context.getReflectBarrierRadius(), serenityRatio);
+    }
+    
+    // Mantra beam
+    if (context.isMantraBeamActive()) {
+      const targetId = context.getMantraTargetId();
+      const stressors = context.getStressors();
+      const target = stressors.find(s => s.id === targetId) || null;
+      this.updateMantraFluid(center, target, context.getBreatheCycleProgress(), serenityRatio, affirmActive);
+    }
+    
+    // Ground field
+    if (context.isGroundFieldActive()) {
+      const fieldPos = context.getGroundFieldPosition();
+      if (fieldPos) {
+        this.updateGroundFluid(fieldPos, context.getGroundFieldRadius(), serenityRatio);
+      }
+    }
+    
+    // Release shockwave
+    if (context.wasReleaseJustTriggered()) {
+      this.updateReleaseFluid(center, true, serenityRatio);
+    }
+     
+    // Update ripple system
+    if (this.rippleSystem) {
+      this.rippleSystem.update(deltaTime);
+    }
+    
+    // Breath ability: emit ripple when reaching peak (maximum size)
+    if (context.justReachedBreathPeak()) {
+      this.createBreathPeakRipple(center, serenityRatio, affirmActive, context);
+    }
+  }
+  
+  /**
+   * Create a ripple effect when breath ability reaches peak (maximum size).
+   * This is a specific visual effect for the breath ability, but uses the generic ripple system.
+   */
+  private createBreathPeakRipple(
+    center: Vector2,
+    serenityRatio: number,
+    affirmActive: boolean,
+    context: SystemContext
+  ): void {
+    // Get health-based color for the ripple
+    const breathColors = getAbilityColor('breathe', serenityRatio, affirmActive);
+    const rippleColor = this.hexToRGB(breathColors.primary);
+    
+    // Get current breath radius at peak (max radius)
+    const maxRadius = context.getBreathMaxRadius();
+    
+    // Create ripple using generic ripple system
+    this.createRipple(center, rippleColor, {
+      initialRadius: maxRadius, // Start at the breath ability's maximum radius
+      maxRadius: maxRadius * 2.0, // Expand to twice the max radius
+      speed: 200, // Expansion speed
+      velocityStrength: 400, // Outward push strength
+      dyeStrength: 1.5, // Color intensity
+      layerId: 'ability_breathe_peak'
+    });
+  }
+
+  private hexToRGB(hex: number): RGB {
+    const r = ((hex >> 16) & 0xFF) / 255;
+    const g = ((hex >> 8) & 0xFF) / 255;
+    const b = (hex & 0xFF) / 255;
+    return { r, g, b };
+  }
+
+  /**
+   * Calculate radial injection points around a center
+   */
+  private calculateRadialInjectionPoints(center: Vector2, radius: number, count: number): Vector2[] {
+    const points: Vector2[] = [];
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2;
+      points.push({
+        x: center.x + Math.cos(angle) * radius,
+        y: center.y + Math.sin(angle) * radius
+      });
+    }
+    return points;
+  }
+
+  /**
+   * Calculate circular injection points for field coverage
+   */
+  private calculateCircularInjectionPoints(center: Vector2, radius: number, count: number): Vector2[] {
+    const points: Vector2[] = [];
+    // Add center point
+    points.push(center);
+    // Add points in concentric circles
+    const rings = Math.floor(Math.sqrt(count));
+    for (let ring = 1; ring <= rings; ring++) {
+      const ringRadius = (ring / rings) * radius;
+      const ringCount = Math.max(4, Math.floor(count / rings));
+      for (let i = 0; i < ringCount; i++) {
+        const angle = (i / ringCount) * Math.PI * 2;
+        points.push({
+          x: center.x + Math.cos(angle) * ringRadius,
+          y: center.y + Math.sin(angle) * ringRadius
+        });
+      }
+    }
+    return points;
+  }
+
+  /**
+   * Calculate line injection points between start and end
+   */
+  private calculateLineInjectionPoints(start: Vector2, end: Vector2, steps: number): Vector2[] {
+    const points: Vector2[] = [];
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      points.push({
+        x: start.x + (end.x - start.x) * t,
+        y: start.y + (end.y - start.y) * t
+      });
+    }
+    return points;
+  }
+  
+  private updateAuraFluid(
     center: Vector2,
     radius: number,
     serenityRatio: number,
     breatheIntensity: number,
     affirmActive: boolean
   ): void {
+    if (!this.fluid) return;
+    
     const pulseFactor = 1 + (breatheIntensity * 0.2);
     const pulsedRadius = radius * pulseFactor;
     
-    if (!this.auraMesh) {
-      const geometry = new THREE.RingGeometry(0, pulsedRadius, 64);
-      const material = new THREE.MeshBasicMaterial({
-        color: 0x87ceeb,
-        transparent: true,
-        side: THREE.DoubleSide
-      });
-      this.auraMesh = new THREE.Mesh(geometry, material);
-      this.scene.add(this.auraMesh);
-    }
-    
-    // Update position
-    const x = center.x - this.width / 2;
-    const y = -(center.y - this.height / 2);
-    this.auraMesh.position.set(x, y, 0);
-    
-    // Update radius
-    const geometry = new THREE.RingGeometry(0, pulsedRadius, 64);
-    this.auraMesh.geometry.dispose();
-    this.auraMesh.geometry = geometry;
-    
     // Use watercolor color palette
     const colors = getAbilityColor('breathe', serenityRatio, affirmActive);
-    const material = this.auraMesh.material as THREE.MeshBasicMaterial;
-    material.color.setHex(colors.primary);
-    material.opacity = colors.opacity;
+    const color = this.hexToRGB(colors.primary);
+    
+    // Inject continuous dye at center
+    this.fluid.injectDyeEnhanced({
+      position: center,
+      color: color,
+      strength: 0.3 * (0.5 + breatheIntensity * 0.5),
+      radius: 8,
+      diffusionRate: 0.5,
+      viscosity: 0.5,
+      temperature: 0.5,
+      lifetime: 2.0,
+      layerId: 'ability_breathe'
+    });
   }
   
-  updateRecenterPulse(
+  private updateRecenterFluid(
     center: Vector2,
     pulseRadius: number,
     serenityRatio: number,
     affirmActive: boolean,
     affirmAmplification: number
   ): void {
-    if (pulseRadius <= 0) {
-      if (this.recenterPulseMesh) {
-        this.scene.remove(this.recenterPulseMesh);
-        this.recenterPulseMesh.geometry.dispose();
-        (this.recenterPulseMesh.material as THREE.Material).dispose();
-        this.recenterPulseMesh = null;
-      }
-      return;
-    }
+    if (!this.fluid || pulseRadius <= 0) return;
     
     const effectiveRadius = pulseRadius * affirmAmplification;
     
-    if (!this.recenterPulseMesh) {
-      const geometry = new THREE.RingGeometry(effectiveRadius - 15, effectiveRadius, 32);
-      const material = new THREE.MeshBasicMaterial({
-        color: 0x7fffd4,
-        transparent: true,
-        side: THREE.DoubleSide
-      });
-      this.recenterPulseMesh = new THREE.Mesh(geometry, material);
-      this.scene.add(this.recenterPulseMesh);
-    }
-    
-    // Update position
-    const x = center.x - this.width / 2;
-    const y = -(center.y - this.height / 2);
-    this.recenterPulseMesh.position.set(x, y, 0);
-    
-    // Update radius
-    const geometry = new THREE.RingGeometry(effectiveRadius - 15, effectiveRadius, 32);
-    this.recenterPulseMesh.geometry.dispose();
-    this.recenterPulseMesh.geometry = geometry;
-    
     // Use watercolor color palette (Recenter uses translucent blue-green, golden under Affirm)
     const colors = getAbilityColor('recenter', serenityRatio, affirmActive);
-    const material = this.recenterPulseMesh.material as THREE.MeshBasicMaterial;
-    material.color.setHex(colors.primary);
-    material.opacity = colors.opacity;
+    const color = this.hexToRGB(colors.primary);
+    
+    // Inject pulse dye into fluid
+    if (!this.fluid) return;
+    this.fluid.injectDyeEnhanced({
+      position: center,
+      color: color,
+      strength: 0.5 * affirmAmplification,
+      radius: effectiveRadius * 0.1, // Scale down for fluid injection
+      diffusionRate: 0.7,
+      viscosity: 0.3,
+      temperature: 0.8,
+      lifetime: 1.5,
+      layerId: 'ability_recenter'
+    });
   }
   
-  updateExhaleWaves(
+  private updateExhaleFluid(
     center: Vector2,
     waves: Array<{ radius: number; maxRadius: number }>,
     serenityRatio: number
   ): void {
-    // Remove old waves
-    const activeIds = new Set(waves.map((_, i) => i));
-    for (const [id, mesh] of this.exhaleWaveMeshes.entries()) {
-      if (!activeIds.has(id)) {
-        this.scene.remove(mesh);
-        mesh.geometry.dispose();
-        (mesh.material as THREE.Material).dispose();
-        this.exhaleWaveMeshes.delete(id);
-      }
-    }
+    if (!this.fluid) return;
+    const fluid = this.fluid; // Capture for type narrowing
     
-    // Update/create waves
-    waves.forEach((wave, index) => {
-      if (!this.exhaleWaveMeshes.has(index)) {
-        const geometry = new THREE.RingGeometry(wave.radius - 20, wave.radius, 32);
-        const material = new THREE.MeshBasicMaterial({
-          color: 0xb0e0e6,
-          transparent: true,
-          side: THREE.DoubleSide
-        });
-        const mesh = new THREE.Mesh(geometry, material);
-        this.exhaleWaveMeshes.set(index, mesh);
-        this.scene.add(mesh);
-      }
-      
-      const mesh = this.exhaleWaveMeshes.get(index)!;
-      const x = center.x - this.width / 2;
-      const y = -(center.y - this.height / 2);
-      mesh.position.set(x, y, 0);
-      
-      // Update radius
-      const geometry = new THREE.RingGeometry(wave.radius - 20, wave.radius, 32);
-      mesh.geometry.dispose();
-      mesh.geometry = geometry;
-      
-      // Use watercolor color palette with progress-based fading
+    // Inject wave dye into fluid continuously around each wave circle
+    waves.forEach((wave) => {
       const progress = wave.radius / wave.maxRadius;
       const waveColors = getExhaleWaveColor(progress, serenityRatio);
-      const material = mesh.material as THREE.MeshBasicMaterial;
-      material.color.setHex(waveColors.color);
-      material.opacity = waveColors.opacity;
+      const color = this.hexToRGB(waveColors.color);
+      
+      // Inject dye continuously around the entire wave circle - EXTREMELY EXAGGERATED
+      const numInjectionPoints = Math.max(128, Math.floor(wave.radius * 2.0)); // Massive number of points for ultra-dense coverage
+      const angleStep = (Math.PI * 2) / numInjectionPoints;
+      
+      for (let i = 0; i < numInjectionPoints; i++) {
+        const angle = i * angleStep;
+        const wavePosition: Vector2 = {
+          x: center.x + Math.cos(angle) * wave.radius,
+          y: center.y + Math.sin(angle) * wave.radius
+        };
+        
+        // Calculate outward direction for velocity injection
+        const outwardDirection = {
+          x: Math.cos(angle),
+          y: Math.sin(angle)
+        };
+        
+        // EXTREMELY EXAGGERATED: Massive strength that barely fades
+        const baseStrength = 5.0; // Extremely high base strength
+        const strength = Math.max(2.0, baseStrength * (1 - progress * 0.1)); // Very high minimum, barely fades
+        
+        fluid.injectDyeEnhanced({
+          position: wavePosition,
+          color: color,
+          strength: strength,
+          radius: 200, // EXTREMELY large radius - massive splats
+          diffusionRate: 0.98, // Near-maximum diffusion for explosive spread
+          viscosity: 0.05, // Ultra-low viscosity for maximum fluidity
+          temperature: 1.0, // Maximum temperature
+          lifetime: 20.0, // Extremely long lifetime
+          layerId: 'ability_exhale',
+          dissipation: 0.998 // Ultra-slow dissipation (0.998 means only 0.2% fades per frame)
+        });
+        
+        // EXTREMELY EXAGGERATED: Massive outward velocity to violently push dye
+        const outwardSpeed = 3000 * (1 - progress * 0.1); // Extremely high speed
+        fluid.injectVelocity(
+          wavePosition.x,
+          wavePosition.y,
+          200, // Massive velocity injection radius
+          {
+            x: outwardDirection.x * outwardSpeed,
+            y: outwardDirection.y * outwardSpeed
+          },
+          3.0 * strength // Extremely strong velocity injection
+        );
+      }
     });
   }
   
-  updateReflectBarrier(
+  private updateReflectFluid(
     center: Vector2,
     radius: number,
     serenityRatio: number
   ): void {
-    if (radius <= 0) {
-      if (this.reflectBarrierMesh) {
-        this.scene.remove(this.reflectBarrierMesh);
-        this.reflectBarrierMesh.geometry.dispose();
-        (this.reflectBarrierMesh.material as THREE.Material).dispose();
-        this.reflectBarrierMesh = null;
-      }
-      return;
-    }
+    if (!this.fluid || radius <= 0) return;
     
     const pulse = 1 + Math.sin(Date.now() * 0.01) * 0.1;
     const pulsedRadius = radius * pulse;
     
-    if (!this.reflectBarrierMesh) {
-      const geometry = new THREE.CircleGeometry(pulsedRadius, 64);
-      const material = new THREE.MeshBasicMaterial({
-        color: 0xe0f7fa, // Clean water effect
-        transparent: true,
-        opacity: 0.3 * serenityRatio * 0.8
-      });
-      this.reflectBarrierMesh = new THREE.Mesh(geometry, material);
-      this.scene.add(this.reflectBarrierMesh);
-    }
-    
-    const x = center.x - this.width / 2;
-    const y = -(center.y - this.height / 2);
-    this.reflectBarrierMesh.position.set(x, y, 0);
-    
-    // Update radius
-    const geometry = new THREE.CircleGeometry(pulsedRadius, 64);
-    this.reflectBarrierMesh.geometry.dispose();
-    this.reflectBarrierMesh.geometry = geometry;
-    
     // Use watercolor color palette (clean water effect, shifts hue when hit)
     const colors = getAbilityColor('reflect', serenityRatio, false);
-    const material = this.reflectBarrierMesh.material as THREE.MeshBasicMaterial;
-    material.color.setHex(colors.primary);
-    material.opacity = colors.opacity;
+    const color = this.hexToRGB(colors.primary);
+    
+    // Inject barrier dye into fluid (ring pattern)
+    const injectionPoints = this.calculateRadialInjectionPoints(center, pulsedRadius * 0.9, 8);
+    for (const barrierPosition of injectionPoints) {
+      this.fluid.injectDyeEnhanced({
+        position: barrierPosition,
+        color: color,
+        strength: 0.3 * serenityRatio,
+        radius: 10,
+        diffusionRate: 0.4,
+        viscosity: 0.6,
+        temperature: 0.5,
+        lifetime: 1.5,
+        layerId: 'ability_reflect'
+      });
+    }
   }
   
-  updateMantraBeam(
+  private updateMantraFluid(
     center: Vector2,
     target: Stressor | null,
     breatheCycleProgress: number,
     serenityRatio: number,
     affirmActive: boolean = false
   ): void {
-    if (!target) {
-      if (this.mantraBeamLine) {
-        this.scene.remove(this.mantraBeamLine);
-        this.mantraBeamLine.geometry.dispose();
-        (this.mantraBeamLine.material as THREE.Material).dispose();
-        this.mantraBeamLine = null;
-      }
-      return;
-    }
+    if (!this.fluid || !target) return;
     
     const pulse = 0.8 + (breatheCycleProgress * 0.2);
     
-    const centerX = center.x - this.width / 2;
-    const centerY = -(center.y - this.height / 2);
-    const targetX = target.position.x - this.width / 2;
-    const targetY = -(target.position.y - this.height / 2);
-    
-    if (!this.mantraBeamLine) {
-      const geometry = new THREE.BufferGeometry();
-      const material = new THREE.LineBasicMaterial({
-        color: 0x4b0082, // Focused indigo
-        transparent: true,
-        linewidth: 3
-      });
-      this.mantraBeamLine = new THREE.Line(geometry, material);
-      this.scene.add(this.mantraBeamLine);
-    }
-    
-    const positions = new Float32Array([
-      centerX, centerY, 0,
-      targetX, targetY, 0
-    ]);
-    this.mantraBeamLine.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    
     // Use watercolor color palette (focused indigo → deep violet, gilded under Affirm)
     const colors = getAbilityColor('mantra', serenityRatio, affirmActive);
-    const material = this.mantraBeamLine.material as THREE.LineBasicMaterial;
-    material.color.setHex(colors.primary);
-    material.opacity = colors.opacity * pulse;
+    const color = this.hexToRGB(colors.primary);
+    
+    // Inject beam dye along the line
+    const injectionPoints = this.calculateLineInjectionPoints(center, target.position, 5);
+    for (const beamPosition of injectionPoints) {
+      this.fluid.injectDyeEnhanced({
+        position: beamPosition,
+        color: color,
+        strength: 0.5 * pulse,
+        radius: 8,
+        diffusionRate: 0.3,
+        viscosity: 0.7,
+        temperature: 0.6,
+        lifetime: 1.0,
+        layerId: 'ability_mantra'
+      });
+    }
   }
   
-  updateGroundField(
+  private updateGroundFluid(
     fieldPos: Vector2 | null,
     fieldRadius: number,
     serenityRatio: number
   ): void {
-    if (!fieldPos || fieldRadius <= 0) {
-      if (this.groundFieldMesh) {
-        this.scene.remove(this.groundFieldMesh);
-        this.groundFieldMesh.geometry.dispose();
-        (this.groundFieldMesh.material as THREE.Material).dispose();
-        this.groundFieldMesh = null;
-      }
-      if (this.groundFieldParticles) {
-        this.scene.remove(this.groundFieldParticles);
-        this.groundFieldParticles.geometry.dispose();
-        (this.groundFieldParticles.material as THREE.Material).dispose();
-        this.groundFieldParticles = null;
-      }
-      return;
-    }
-    
-    const x = fieldPos.x - this.width / 2;
-    const y = -(fieldPos.y - this.height / 2);
-    
-    if (!this.groundFieldMesh) {
-      const geometry = new THREE.CircleGeometry(fieldRadius, 32);
-      const material = new THREE.MeshBasicMaterial({
-        color: 0x8b7355, // Earthy brown-green
-        transparent: true
-      });
-      this.groundFieldMesh = new THREE.Mesh(geometry, material);
-      this.scene.add(this.groundFieldMesh);
-    }
-    
-    this.groundFieldMesh.position.set(x, y, 0);
+    if (!this.fluid || !fieldPos || fieldRadius <= 0) return;
     
     // Use watercolor color palette (earthy brown-green → warm ochre, dries to muted gray)
     const colors = getAbilityColor('ground', serenityRatio, false);
-    const material = this.groundFieldMesh.material as THREE.MeshBasicMaterial;
-    material.color.setHex(colors.primary);
-    material.opacity = colors.opacity;
+    const color = this.hexToRGB(colors.primary);
     
-    // Update particles
-    const time = Date.now() * 0.001;
-    const particleCount = 5;
-    const positions = new Float32Array(particleCount * 3);
-    
-    for (let i = 0; i < particleCount; i++) {
-      const angle = (time * 0.5 + i * Math.PI * 0.4) % (Math.PI * 2);
-      const dist = fieldRadius * 0.6;
-      positions[i * 3] = x + Math.cos(angle) * dist;
-      positions[i * 3 + 1] = y + Math.sin(angle) * dist;
-      positions[i * 3 + 2] = 0;
-    }
-    
-    if (!this.groundFieldParticles) {
-      const geometry = new THREE.BufferGeometry();
-      const particleMaterial = new THREE.PointsMaterial({
-        color: colors.primary,
-        size: 6,
-        transparent: true
-      });
-      this.groundFieldParticles = new THREE.Points(geometry, particleMaterial);
-      this.scene.add(this.groundFieldParticles);
-    }
-    
-    this.groundFieldParticles.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    const particleMaterial = this.groundFieldParticles.material as THREE.PointsMaterial;
-    particleMaterial.color.setHex(colors.primary);
-    particleMaterial.opacity = colors.opacity * 0.6;
+    // Inject field dye into fluid
+    this.fluid.injectDyeEnhanced({
+      position: fieldPos,
+      color: color,
+      strength: 0.4 * serenityRatio,
+      radius: fieldRadius * 0.3,
+      diffusionRate: 0.5,
+      viscosity: 0.5,
+      temperature: 0.4,
+      lifetime: 2.0,
+      layerId: 'ability_ground'
+    });
   }
   
-  updateReleaseShockwave(
+  private updateReleaseFluid(
     center: Vector2,
     active: boolean,
     serenityRatio: number
   ): void {
-    if (!active) {
-      if (this.releaseShockwaveMesh) {
-        this.scene.remove(this.releaseShockwaveMesh);
-        this.releaseShockwaveMesh.geometry.dispose();
-        (this.releaseShockwaveMesh.material as THREE.Material).dispose();
-        this.releaseShockwaveMesh = null;
-      }
-      return;
-    }
+    if (!this.fluid || !active) return;
     
     const maxRadius = AbilityConfig.RELEASE_RADIUS;
     
-    if (!this.releaseShockwaveMesh) {
-      const geometry = new THREE.CircleGeometry(maxRadius, 64);
-      const material = new THREE.MeshBasicMaterial({
-        color: 0x808080, // Muted gray (full spectrum blend)
-        transparent: true
-      });
-      this.releaseShockwaveMesh = new THREE.Mesh(geometry, material);
-      this.scene.add(this.releaseShockwaveMesh);
-    }
-    
-    const x = center.x - this.width / 2;
-    const y = -(center.y - this.height / 2);
-    this.releaseShockwaveMesh.position.set(x, y, 0);
-    
     // Use watercolor color palette (full spectrum → muted gray → pastel recovery)
     const colors = getReleaseColor(serenityRatio);
-    const material = this.releaseShockwaveMesh.material as THREE.MeshBasicMaterial;
-    material.color.setHex(colors.color);
-    material.opacity = colors.opacity;
+    const color = this.hexToRGB(colors.color);
+    
+    // Inject shockwave dye into fluid (radial burst)
+    const injectionPoints = this.calculateRadialInjectionPoints(center, maxRadius * 0.7, 12);
+    for (const shockwavePosition of injectionPoints) {
+      this.fluid.injectDyeEnhanced({
+        position: shockwavePosition,
+        color: color,
+        strength: 0.6,
+        radius: 20,
+        diffusionRate: 0.8,
+        viscosity: 0.2,
+        temperature: 0.9,
+        lifetime: 1.5,
+        layerId: 'ability_release'
+      });
+    }
   }
   
-  updateAffirmGlow(
+  private updateAffirmFluid(
     center: Vector2,
     radius: number,
     serenityRatio: number
   ): void {
-    if (radius <= 0) {
-      if (this.affirmGlowMesh) {
-        this.scene.remove(this.affirmGlowMesh);
-        this.affirmGlowMesh.geometry.dispose();
-        (this.affirmGlowMesh.material as THREE.Material).dispose();
-        this.affirmGlowMesh = null;
-      }
-      return;
-    }
-    
-    if (!this.affirmGlowMesh) {
-      const geometry = new THREE.RingGeometry(radius, radius * 1.5, 64);
-      const material = new THREE.MeshBasicMaterial({
-        color: 0xffd700, // Golden glaze
-        transparent: true,
-        side: THREE.DoubleSide
-      });
-      this.affirmGlowMesh = new THREE.Mesh(geometry, material);
-      this.scene.add(this.affirmGlowMesh);
-    }
-    
-    const x = center.x - this.width / 2;
-    const y = -(center.y - this.height / 2);
-    this.affirmGlowMesh.position.set(x, y, 0);
+    if (!this.fluid || radius <= 0) return;
     
     const pulse = 1 + Math.sin(Date.now() * 0.01) * 0.2;
-    const geometry = new THREE.RingGeometry(radius * pulse, radius * 1.5 * pulse, 64);
-    this.affirmGlowMesh.geometry.dispose();
-    this.affirmGlowMesh.geometry = geometry;
+    const pulsedRadius = radius * pulse;
     
     // Use watercolor color palette (golden glaze → warm ochre)
     const colors = getAbilityColor('affirm', serenityRatio, false);
-    const material = this.affirmGlowMesh.material as THREE.MeshBasicMaterial;
-    material.color.setHex(colors.primary);
-    material.opacity = colors.opacity;
-  }
-  
-  dispose(): void {
-    // Clean up all meshes
-    const meshes = [
-      this.auraMesh,
-      this.recenterPulseMesh,
-      this.reflectBarrierMesh,
-      this.mantraBeamLine,
-      this.groundFieldMesh,
-      this.groundFieldParticles,
-      this.releaseShockwaveMesh,
-      this.affirmGlowMesh
-    ];
+    const color = this.hexToRGB(colors.primary);
     
-    meshes.forEach(mesh => {
-      if (mesh) {
-        this.scene.remove(mesh);
-        mesh.geometry.dispose();
-        (mesh.material as THREE.Material).dispose();
-      }
-    });
-    
-    for (const mesh of this.exhaleWaveMeshes.values()) {
-      this.scene.remove(mesh);
-      mesh.geometry.dispose();
-      (mesh.material as THREE.Material).dispose();
+    // Inject glow dye into fluid (ring pattern)
+    const injectionPoints = this.calculateRadialInjectionPoints(center, pulsedRadius * 1.25, 16);
+    for (const glowPosition of injectionPoints) {
+      this.fluid.injectDyeEnhanced({
+        position: glowPosition,
+        color: color,
+        strength: 0.4 * serenityRatio,
+        radius: 12,
+        diffusionRate: 0.6,
+        viscosity: 0.4,
+        temperature: 0.7,
+        lifetime: 2.0,
+        layerId: 'ability_affirm'
+      });
     }
     
-    this.exhaleWaveMeshes.clear();
+    // Also inject at center for stronger glow
+    this.fluid.injectDyeEnhanced({
+      position: center,
+      color: color,
+      strength: 0.3 * serenityRatio,
+      radius: pulsedRadius * 0.5,
+      diffusionRate: 0.5,
+      viscosity: 0.5,
+      temperature: 0.6,
+      lifetime: 2.0,
+      layerId: 'ability_affirm'
+    });
+  }
+  
+  /**
+   * Create a ripple effect at the specified position
+   * Useful for stressor deaths, ability impacts, etc.
+   */
+  createRipple(position: Vector2, color: RGB, options?: {
+    initialRadius?: number;
+    maxRadius?: number;
+    speed?: number;
+    velocityStrength?: number;
+    dyeStrength?: number;
+    layerId?: string;
+  }): void {
+    if (!this.rippleSystem) return;
+    
+    this.rippleSystem.createRipple({
+      position,
+      color,
+      initialRadius: options?.initialRadius ?? 5,
+      maxRadius: options?.maxRadius ?? 200,
+      speed: options?.speed ?? 150,
+      velocityStrength: options?.velocityStrength ?? 300,
+      dyeStrength: options?.dyeStrength ?? 1.0,
+      layerId: options?.layerId ?? 'ability_ripple'
+    });
   }
 }
-

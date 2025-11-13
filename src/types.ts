@@ -3,6 +3,25 @@ export interface Vector2 {
   y: number;
 }
 
+export interface RGB {
+  r: number;
+  g: number;
+  b: number;
+}
+
+export interface EnhancedDyeInjection {
+  position: Vector2;
+  color: RGB;
+  strength: number;
+  radius: number;
+  diffusionRate: number;  // Controls ink spread speed (0-1)
+  viscosity: number;      // Controls ink thickness (0-1)
+  temperature: number;     // Affects diffusion (0-1)
+  lifetime: number;        // How long ink persists (seconds)
+  layerId: string;         // Which layer to inject into (e.g., stressor type, ability name)
+  dissipation?: number;    // Optional: Controls dye fade rate (0-1, lower = more accumulation)
+}
+
 export interface GameState {
   serenity: number;
   maxSerenity: number;
@@ -21,7 +40,9 @@ export enum StressorType {
   EnvironmentalNoise = 'environmental_noise',
   Expectation = 'expectation',
   Fatigue = 'fatigue',
-  Impulse = 'impulse'
+  SelfDoubt = 'self_doubt',
+  Overwhelm = 'overwhelm',
+  Impulse = 'impulse' // Keep for backward compatibility
 }
 
 export interface Stressor {
@@ -38,7 +59,11 @@ export interface Stressor {
   orbitAngle?: number;
   dashCooldown?: number;
   spawnTime: number;
-  slowDebuff?: number; // Persistent slow multiplier (0-1)
+  debuffs?: Record<string, number>; // Multiple debuff types (slow, vulnerability, damage_reduction) - Reserved for future use
+  retreatState?: {
+    startTime: number;
+    endTime: number;
+  };
 }
 
 export interface AbilityBranch {

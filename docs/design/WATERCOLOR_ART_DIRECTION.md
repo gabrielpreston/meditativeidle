@@ -2,53 +2,53 @@
 
 ## Aesthetic Goal
 
-Simulate the **fluid impermanence of watercolor** — pigment diffusing in water, interacting with paper texture, drying and rehydrating dynamically.
+Simulate the **fluid dynamics of liquid watercolor** — dye diffusing through liquid medium, interacting through fluid flow, mixing and dispersing dynamically.
 
-Every ability should appear to *paint* or *wash away* the world rather than overlay graphical effects.
+Every ability should appear to *flow* or *dissolve* through the liquid medium rather than overlay graphical effects.
 
 ---
 
 ## 1. Core Rendering Philosophy
 
 * **Medium Simulation:**
-  Render the scene as a living watercolor painting — always slightly wet, colors flowing and merging in real time.
+  Render the scene as a living liquid medium — always in motion, colors flowing and merging through fluid dynamics in real time.
 
-* **Brush-Less Expression:**
+* **Flow-Based Expression:**
   No sharp outlines, particles, or digital glow.
-  All motion should arise from **diffusion, absorption, and translucency**.
+  All motion should arise from **fluid flow, diffusion, and liquid mixing**.
 
 * **Continuity:**
-  Nothing "snaps" on or off — all transitions occur via soft diffusion, wash, or drying.
+  Nothing "snaps" on or off — all transitions occur via soft diffusion, current mixing, or gradual dispersion.
 
 ---
 
 ## 2. Shader & Layer Structure
 
-### a. Base Canvas Layer
+### a. Base Fluid Medium
 
-* Paper texture simulation using subtle fiber noise and surface roughness.
-* Controls absorbency (how far pigment diffuses).
+* Liquid medium simulation using fluid dynamics and flow patterns.
+* Controls viscosity and flow characteristics (how far dye diffuses through the liquid).
 
-### b. Pigment Layer System
+### b. Dye Layer System
 
-* Each ability adds pigment in a specific hue and wetness value.
-* Pigments interact via:
-  * **Capillary Diffusion:** Soft, radial blending.
-  * **Granulation Simulation:** Slight pigment separation at low wetness.
-  * **Edge Darkening:** Drier edges retain color (common in real watercolor drying).
-* Pigment should *mix additively* when overlapping, not replace previous layers.
+* Each ability adds dye in a specific hue and concentration value.
+* Dyes interact via:
+  * **Fluid Diffusion:** Soft, radial dispersion through liquid medium.
+  * **Turbulence Patterns:** Complex flow separation creating swirling patterns.
+  * **Concentration Gradients:** Higher concentrations at flow boundaries (common in liquid mixing).
+* Dye should *mix additively* when overlapping through fluid blending, not replace previous layers.
 
-### c. Water Simulation Layer
+### c. Flow State Layer
 
-* Simulates active vs dry areas of the paper:
-  * High Serenity → "wet" state (smooth, blended visuals).
-  * Low Serenity → "dry" state (harder edges, cracks, rough textures).
-* Tracks localized wetness per pixel for independent drying.
+* Simulates active vs stagnant areas of the liquid:
+  * High Serenity → "flowing" state (smooth, blended visuals, high diffusion).
+  * Low Serenity → "stagnant" state (harder boundaries, reduced mixing, visible separation).
+* Tracks localized flow velocity per pixel for independent fluid behavior.
 
-### d. Evaporation & Rehydration
+### d. Dispersion & Mixing
 
-* Each frame, pixels move toward dryness unless reactivated by new ability layers or rising Serenity.
-* Wetness = 0 fades pigment to matte texture; wetness = 1 yields vibrant diffusion.
+* Each frame, dye concentrations disperse through diffusion unless reactivated by new ability layers or rising Serenity.
+* Flow velocity = 0 creates stagnant zones with reduced mixing; flow velocity = 1 yields vibrant diffusion and blending.
 
 ---
 
@@ -56,49 +56,49 @@ Every ability should appear to *paint* or *wash away* the world rather than over
 
 | Serenity % | Visual Behavior                                                       |
 | ---------- | --------------------------------------------------------------------- |
-| 100–80     | Fully wet: smooth gradients, flowing motion, high translucency        |
-| 79–50      | Semi-dry: pigment edges visible, soft blooms, mild granulation        |
-| 49–20      | Drying: fragmented textures, muted colors, visible paper grain        |
-| ≤19        | Overdry: brittle pigment cracking, dull palette, edge bleed reduction |
+| 100–80     | Fully flowing: smooth gradients, active currents, high diffusion     |
+| 79–50      | Moderate flow: dye boundaries visible, soft blooms, mild turbulence   |
+| 49–20      | Stagnant: fragmented flow patterns, muted colors, visible separation |
+| ≤19        | Nearly still: reduced mixing, dull palette, minimal diffusion          |
 
-Serenity thus acts as the **global moisture controller** — visually encoding calm vs stress through medium behavior.
+Serenity thus acts as the **global flow controller** — visually encoding calm vs stress through liquid medium behavior.
 
 ---
 
 ## 4. Temporal Animation Rules
 
-* **Inhale/Exhale Pulse:** Expand/contract pigment radius via sine wave scaling.
-* **Cooldown Effects:** Fade pigment saturation during downtime.
-* **Ability Activation:** Introduce pigment with higher wetness, then gradually evaporate.
-* **Overlap:** Blends pigment colors using watercolor mixing logic (e.g., blue + yellow = green).
+* **Inhale/Exhale Pulse:** Expand/contract dye radius via sine wave scaling, like breathing currents.
+* **Cooldown Effects:** Fade dye concentration during downtime through gradual dispersion.
+* **Ability Activation:** Introduce dye with higher concentration, then gradually disperse through fluid mixing.
+* **Overlap:** Blends dye colors using liquid mixing logic (e.g., blue + yellow = green through fluid blending).
 
 ---
 
 ## 5. Recommended Implementation Approach
 
 * Use **shader graph** or **node-based material** system:
-  * One master watercolor shader with parameters:
-    * `wetness`
-    * `pigment_density`
-    * `granulation_intensity`
+  * One master liquid watercolor shader with parameters:
+    * `flow_velocity`
+    * `dye_concentration`
+    * `turbulence_intensity`
     * `diffusion_speed`
     * `hue_variance`
   * Each ability modifies these parameters in its active region.
 
-* Render **abilities as localized pigment injections** (masked radial gradients) into a shared "wet canvas buffer."
+* Render **abilities as localized dye injections** (masked radial gradients) into a shared "fluid medium buffer."
 
-* Control all drying, diffusion, and blending through time-based simulation.
+* Control all dispersion, diffusion, and blending through time-based fluid simulation.
 
 ---
 
 ## 6. Color Palette Guidelines
 
-* Use a **limited, semi-transparent watercolor palette**:
+* Use a **limited, semi-transparent liquid dye palette**:
   * Serenity High → *Lavender, Pale Blue, Warm Ochre, White Gold*
   * Serenity Medium → *Coral, Slate Blue, Faded Mint*
   * Serenity Low → *Muted Gray, Desaturated Indigo, Deep Violet*
 
-* Avoid pure black or saturated neon — all tones must feel **natural and aqueous**.
+* Avoid pure black or saturated neon — all tones must feel **natural and fluid**, like dyes suspended in liquid.
 
 See [COLOR_PALETTE.md](./COLOR_PALETTE.md) for detailed color mappings.
 
@@ -106,21 +106,21 @@ See [COLOR_PALETTE.md](./COLOR_PALETTE.md) for detailed color mappings.
 
 ## 7. Performance Optimization Tips
 
-* Pigment diffusion can be simulated using:
+* Dye diffusion can be simulated using:
   * Blur-based diffusion maps updated per frame.
-  * Cellular wetness buffers updated only in active ability regions.
+  * Cellular flow velocity buffers updated only in active ability regions.
 
-* Cache paper texture and overlay subtle static noise to maintain tactility.
+* Cache fluid flow patterns and overlay subtle dynamic noise to maintain liquid motion.
 
-* Use additive alpha blending with low opacity for natural watercolor layering.
+* Use additive alpha blending with low opacity for natural liquid dye layering.
 
 ---
 
 ## 8. Thematic Summary
 
-> The player does not fire weapons or cast spells — they **paint balance back into being**.
-> Every mechanic leaves a mark, and every mark eventually fades.
-> The battlefield is not conquered — it is **repainted**, over and over, until calm returns.
+> The player does not fire weapons or cast spells — they **flow balance back into being**.
+> Every mechanic creates currents, and every current eventually disperses.
+> The battlefield is not conquered — it is **rebalanced through fluid dynamics**, over and over, until calm returns.
 
 ---
 
@@ -133,5 +133,5 @@ This project uses a fluid simulation system for liquid watercolor effects. The a
 - `src/rendering/watercolor/FluidCompositePass.ts` - Post-processing pass that composites fluid dye over scene
 - `src/rendering/scenes/AbilityEffects.ts` - Individual ability visual effects (dye injection)
 
-The system uses fluid parameters like `viscosity`, `dyeDissipation`, `velocityDissipation`, `curl`, `pressureIters`, and `refractionScale` which are derived from the `wetness` parameter based on serenity ratio.
+The system uses fluid parameters like `viscosity`, `dyeDissipation`, `velocityDissipation`, `curl`, `pressureIters`, and `refractionScale` which are derived from the `flow_velocity` parameter based on serenity ratio, controlling how dye flows and mixes through the liquid medium.
 

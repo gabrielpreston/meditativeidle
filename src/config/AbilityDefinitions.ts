@@ -86,11 +86,11 @@ export const AbilityDefinitions: Record<AbilityType, AbilityDefinition> = {
   breathe: {
     id: 'breathe',
     name: 'Breathe',
-    description: 'A constant aura of calm that gently damages nearby stressors.',
+    description: 'An Area of Effect ability centered on the player that pulses with breathing, dealing persistent damage to stressors within range.',
     activationType: 'always_active',
     baseStats: {
       damage: 5, // Moderate base damage per second
-      radius: 250, // Medium aura radius
+      radius: 250, // Maximum AoE radius when fully expanded
     },
     scaling: {
       damagePerLevel: 0.1, // +10% per level

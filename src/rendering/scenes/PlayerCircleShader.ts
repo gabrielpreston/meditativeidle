@@ -20,20 +20,18 @@ export const PlayerCircleShader = {
     uniform float circleRadius;
     uniform float pulseAmount; // 0.0 to 1.0, controls pulse intensity
     uniform float edgeSoftness; // How soft the edges are
+    uniform float opacity; // Player circle opacity (0.0 to 1.0)
     
     varying vec2 vUv;
     varying vec3 vPosition;
     
     void main() {
-      // Calculate distance from center using UV coordinates
-      // CircleGeometry has UVs from 0-1, with center at (0.5, 0.5)
-      vec2 center = vec2(0.5, 0.5);
-      vec2 uvFromCenter = vUv - center;
-      float dist = length(uvFromCenter) * 2.0; // Scale to 0-1 range (diameter = 1)
+      // Calculate distance from center using world-space position
+      // This ensures the shader scales correctly with geometry size
+      float dist = length(vPosition.xy) / circleRadius;
       
-      // Current radius with pulse (normalized to 0-1 range)
-      float normalizedRadius = 0.5; // CircleGeometry radius is 0.5 in normalized space
-      float currentRadius = normalizedRadius * (1.0 + pulseAmount * 0.15);
+      // Current radius with pulse (normalized to circleRadius)
+      float currentRadius = 1.0 * (1.0 + pulseAmount * 0.15);
       
       // Create soft edge falloff
       float edgeDistance = currentRadius - dist;
@@ -54,7 +52,8 @@ export const PlayerCircleShader = {
       // Calculate final color
       vec3 finalColor = circleColor * edgeIntensity;
       
-      gl_FragColor = vec4(finalColor, alpha);
+      // Apply opacity
+      gl_FragColor = vec4(finalColor, alpha * opacity);
     }
   `
 };

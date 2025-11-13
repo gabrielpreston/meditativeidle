@@ -1,17 +1,32 @@
 export const GameConfig = {
   // Core System Values
   MAX_SERENITY: 100,
-  AURA_RADIUS: 250, // Increased from 150 to 250
-  AURA_DAMAGE_PER_SECOND: 5, // Damage stressors take per second when in aura
+  
+  // Visual
+  PLAYER_RADIUS: 80, // Player circle radius (static) - actual visual radius
+  PLAYER_OPACITY: 0.1, // Player circle opacity (0.0 to 1.0)
+  PLAYFIELD_PADDING: 50, // Padding around playfield edges for stressor boundaries
+  BLOOM_INTENSITY: 0.3, // Reserved for future bloom post-processing effect (currently unused)
+  
+  // Breath Ability - Area of Effect (Core Attributes Only)
+  BREATHE_AOE_BUFFER: 20, // Minimum defensive zone buffer around player (added to PLAYER_RADIUS for min radius)
+  BREATHE_AOE_GROWTH: 40, // Maximum amount of growth during exhale cycle (added to min radius)
+  BREATHE_CYCLE_DURATION: 8, // Total cycle duration in seconds (inhale + exhale)
+  BREATHE_BASE_DAMAGE_PER_SECOND: 5, // Base damage dealt per second
+  BREATHE_DAMAGE_SCALING: 0.1, // Per-level damage multiplier (+10% per level)
+  BREATHE_SLOW_STRENGTH: 0.5, // 50% slow (0.5x speed multiplier) applied while in breath AoE
   
   // Wave Configuration
   WAVE_DURATION: 60, // seconds
   WAVE_15_TARGET_DEFEAT: true, // Must be defeated by wave 15
   
+  // Stressor Collision Damage
+  STRESSOR_COLLISION_DAMAGE: 5, // Damage dealt to serenity when stressor reaches player edge
+  
   // Stressor Scaling
   STRESSOR_BASE_COUNT: 3,
   STRESSOR_COUNT_MULTIPLIER: 1.15, // per wave
-  STRESSOR_BASE_HEALTH: 10,
+  STRESSOR_BASE_HEALTH: 4, // Base health - Wave 1 dies in AoE, Wave 2+ can survive
   STRESSOR_HEALTH_MULTIPLIER: 1.2, // per wave
   STRESSOR_BASE_SPEED: 180, // pixels per second (6x faster than original)
   STRESSOR_SPEED_MULTIPLIER: 1.1, // per wave
@@ -51,15 +66,35 @@ export const GameConfig = {
       health: 0.9,
       color: '#FF4757',
       acceleration: true
+    },
+    self_doubt: {
+      speed: 0.8,
+      health: 1.1,
+      color: '#A0A0A0' // Placeholder - will be replaced by color interpolation
+    },
+    overwhelm: {
+      speed: 1.2,
+      health: 0.9,
+      color: '#FF69B4' // Placeholder - will be replaced by color interpolation
     }
   },
   
   // Ability Configuration
   AFFIRM_MAX_TARGETS: 3,
   
-  // Ability Effects
-  BREATHE_BASE_DAMAGE_PER_SECOND: 5,
-  BREATHE_DAMAGE_SCALING: 0.1, // per level multiplier
+  // Ability Enable/Disable Toggles
+  // Set to true to enable an ability, false to disable it
+  ABILITY_ENABLED: {
+    breathe: true,      // Always active AoE damage
+    recenter: true,     // Pulse burst slow
+    affirm: true,       // Ability amplifier
+    exhale: true,       // Expanding waves
+    reflect: true,      // Reactive barrier
+    mantra: true,       // Focus beam
+    ground: true,       // Area trap
+    release: true,      // Ultimate cleanse
+    align: true         // Rhythmic modulator
+  },
   
   // Recenter - Pulse Burst
   RECENTER_COOLDOWN: 8, // seconds between pulses
@@ -142,15 +177,13 @@ export const GameConfig = {
   UPGRADE_COST_BASE: 20,
   UPGRADE_COST_MULTIPLIER: 1.5,
   
-  // Visual
-  CENTER_RADIUS: 80, // Doubled from 40 to 80
-  PLAYFIELD_PADDING: 50,
-  BLOOM_INTENSITY: 0.3,
-  
   // Performance
   TARGET_FPS: 60,
   PERFORMANCE_THRESHOLD: 55,
   TELEMETRY_INTERVAL: 1000, // ms
+  
+  // Debug
+  DEBUG_SHOW_RINGS: 0, // 0 = off, 1 = on - Show concentric debug rings every 50px
   
   // Colors (High Serenity)
   COLOR_HIGH_SERENITY: {

@@ -9,6 +9,7 @@
 
 import { AbilityDefinitions, getAbilityDefinition, AbilityType } from './AbilityDefinitions';
 import { GameConfig } from '../GameConfig';
+import { getBreathMaxRadius } from '../utils/BreathUtils';
 
 /**
  * Get base damage for an ability at a given level
@@ -77,16 +78,11 @@ export function getAbilitySlowStrength(ability: AbilityType, level: number): num
  * a unified interface that prefers AbilityDefinitions but falls back to GameConfig.
  */
 export const AbilityConfig = {
-  // Breathe
-  get BREATHE_BASE_DAMAGE() {
-    return AbilityDefinitions.breathe.baseStats.damage || GameConfig.BREATHE_BASE_DAMAGE_PER_SECOND;
-  },
-  get BREATHE_DAMAGE_SCALING() {
-    return AbilityDefinitions.breathe.scaling.damagePerLevel || GameConfig.BREATHE_DAMAGE_SCALING;
-  },
-  get BREATHE_BASE_RADIUS() {
-    return AbilityDefinitions.breathe.baseStats.radius || GameConfig.AURA_RADIUS;
-  },
+          // Breathe - Core attributes only (no damage, no scaling)
+          get BREATHE_BASE_RADIUS() {
+            // Return max radius (player + buffer + growth) for compatibility
+            return AbilityDefinitions.breathe.baseStats.radius || getBreathMaxRadius();
+          },
   
   // Recenter
   get RECENTER_COOLDOWN() {

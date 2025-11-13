@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "build:analyze": "vite build && du -sh dist/*"
+    "build:analyze": "vite build && du -sh dist/*",
+    "type-check": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/three": "^0.181.0",

@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import { EffectComposer, RenderPass } from 'postprocessing';
-import { GameState, Vector2 } from '../types';
+import { GameState, Vector2, Stressor, AbilityState } from '../types';
+import { SystemContext } from '../systems/ISystem';
 import { GameConfig } from '../GameConfig';
+import { Game } from '../Game';
 import { GameScene } from './scenes/GameScene';
 import { WatercolorStateController } from './watercolor/WatercolorStateController';
 import { FluidSim } from './watercolor/FluidSim';
@@ -9,7 +11,12 @@ import { FluidCompositePass } from './watercolor/FluidCompositePass';
 import { WatercolorUIRenderer } from './ui/WatercolorUIRenderer';
 import { FluidStatsTable } from './ui/elements/FluidStatsTable';
 import { FluidReflectionScreen } from './ui/elements/FluidReflectionScreen';
+import { DeveloperPanel } from '../ui/DeveloperPanel';
+import { getKeyboardManager } from '../utils/KeyboardManager';
 import { smoothstep } from '../utils/MathUtils';
+import { getBreathRadius } from '../utils/BreathUtils';
+import { StressorFluidIntegration } from './watercolor/StressorFluidIntegration';
+import { AbilityEffects } from './scenes/AbilityEffects';
 
 export class ThreeRenderer {
   private renderer: THREE.WebGLRenderer;
@@ -20,8 +27,12 @@ export class ThreeRenderer {
   private watercolorController: WatercolorStateController;
   private fluid: FluidSim | null = null;
   private fluidPass: FluidCompositePass | null = null;
+  private stressorFluidIntegration: StressorFluidIntegration | null = null;
+  private abilityEffects: AbilityEffects | null = null;
   private width: number;
   private height: number;
+  private fps: number = 60;
+  private lastFrameTime: number = performance.now();
   
   // UI overlay canvas (separate from WebGL canvas)
   private uiCanvas: HTMLCanvasElement;
@@ -33,6 +44,9 @@ export class ThreeRenderer {
   // Modal screens (Phase 6)
   private fluidStatsTable: FluidStatsTable | null = null;
   private fluidReflectionScreen: FluidReflectionScreen | null = null;
+  
+  // Developer panel
+  private developerPanel: DeveloperPanel | null = null;
   
   constructor(canvas: HTMLCanvasElement) {
     this.width = canvas.width;
@@ -47,7 +61,7 @@ export class ThreeRenderer {
     });
     this.renderer.setSize(this.width, this.height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.setClearColor(0xf5f0ff, 1.0); // Set clear color to soft lavender-tinted white
+    this.renderer.setClearColor(0xffffff, 1.0); // Set clear color to white
     
     // Setup camera (orthographic for 2D-like game)
     // Use pixel-perfect mapping: camera covers exactly the canvas size
@@ -62,7 +76,7 @@ export class ThreeRenderer {
     
     // Setup scene
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0xf5f0ff); // Default background - soft lavender-tinted white
+    this.scene.background = new THREE.Color(0xffffff); // Default background - white
     
     // Setup game scene
     this.gameScene = new GameScene(this.scene, this.width, this.height);
@@ -76,6 +90,12 @@ export class ThreeRenderer {
     this.fluid = new FluidSim(this.width, this.height, this.renderer);
     this.fluidPass = new FluidCompositePass(this.fluid.getDyeTexture());
     this.composer.addPass(this.fluidPass);
+    
+    // Setup stressor-fluid integration
+    this.stressorFluidIntegration = new StressorFluidIntegration(this.width, this.height);
+    
+    // Setup ability effects (with fluid reference for dye injection)
+    this.abilityEffects = new AbilityEffects(this.width, this.height, this.fluid);
     
     // CRITICAL: Set composer size - without this, it defaults to 0x0 and renders black
     this.composer.setSize(this.width, this.height);
@@ -119,15 +139,36 @@ export class ThreeRenderer {
       y: this.height / 2
     });
     this.fluidReflectionScreen.setDimensions(this.width, this.height);
+    
+    // Initialize developer panel
+    this.developerPanel = new DeveloperPanel({ x: 0, y: 0 });
+    this.developerPanel.setDimensions(this.width, this.height);
+    this.developerPanel.setSettingChangeCallback((key: string, value: number | boolean) => {
+      if (typeof value === 'number') {
+        this.handleSettingChange(key, value);
+      } else {
+        // Handle boolean values - convert to number for compatibility (0/1)
+        this.handleSettingChange(key, value ? 1 : 0);
+      }
+    });
   }
   
   render(
     state: GameState,
     center: Vector2,
     deltaTime: number = 0.016,
-    performanceMode: boolean = false
+    performanceMode: boolean = false,
+    stressors?: Stressor[],
+    abilityState?: AbilityState,
+    systemContext?: SystemContext
   ): void {
     const serenityRatio = state.serenity / state.maxSerenity;
+    
+    // Calculate FPS for LOD
+    const now = performance.now();
+    const frameDelta = now - this.lastFrameTime;
+    this.fps = frameDelta > 0 ? 1000 / frameDelta : 60;
+    this.lastFrameTime = now;
     
     // Update watercolor state controller (for fluid parameters)
     this.watercolorController.update(serenityRatio);
@@ -154,7 +195,22 @@ export class ThreeRenderer {
       }
       
       this.fluid.setParams(fluidParams);
+      
+      // Apply LOD based on FPS and stressor count
+      if (stressors) {
+        const lod = this.fluid.calculateLOD(this.fps, stressors.length);
+        this.fluid.setResolution(lod.resolution);
+        if (this.stressorFluidIntegration) {
+          this.stressorFluidIntegration.setInjectionRate(lod.injectionRate);
+        }
+      }
+      
       this.fluid.step(deltaTime);
+      
+      // Update stressor-fluid integration (culling and LOD throttling handled internally)
+      if (stressors && this.stressorFluidIntegration && this.fluid) {
+        this.stressorFluidIntegration.update(stressors, deltaTime, this.fluid);
+      }
       
       // Update fluid composite pass uniforms
       this.fluidPass.setUniforms({
@@ -164,17 +220,40 @@ export class ThreeRenderer {
       });
     }
     
-    // Update game scene (just the center/player)
+    // Calculate current breath AoE radius for visual
+    let breathRadius: number | undefined = undefined;
+    if (systemContext) {
+      const rawProgress = systemContext.getBreatheRawCycleProgress();
+      breathRadius = getBreathRadius(rawProgress);
+    }
+    
+    // Update game scene (center/player and stressors)
     this.gameScene.update(
       state,
-      center
+      center,
+      stressors || [],
+      breathRadius
     );
     
-    // Update scene colors based on serenity
-    this.updateSceneColors(serenityRatio);
+    // Update ability effects (with fluid dye injection)
+    if (this.abilityEffects && systemContext) {
+      this.abilityEffects.update(systemContext, center, deltaTime);
+    }
+    
+    // Background stays white - color mixing happens through fluid simulation
+    // this.updateSceneColors(serenityRatio); // Disabled - background stays white
     
     // Render with post-processing
     this.composer.render();
+    
+    // Render developer panel if visible
+    if (this.developerPanel && this.developerPanel.getIsVisible()) {
+      const fluidField = this.watercolorUIRenderer?.getFluidField();
+      if (fluidField) {
+        this.developerPanel.update(deltaTime, fluidField, []);
+      }
+      this.developerPanel.render(this.uiCtx, Date.now() * 0.001);
+    }
   }
   
   private updateSceneColors(serenityRatio: number): void {
@@ -226,14 +305,122 @@ export class ThreeRenderer {
     if (this.fluidStatsTable) {
       this.fluidStatsTable.updateMousePos(pos);
     }
+    // Update developer panel for hover detection
+    if (this.developerPanel) {
+      this.developerPanel.updateMousePos(pos);
+    }
   }
   
   checkAbilityClick(mousePos: Vector2): string | null {
+    // Check developer panel first (if visible, it handles clicks)
+    if (this.developerPanel && this.developerPanel.getIsVisible()) {
+      if (this.developerPanel.checkClick(mousePos)) {
+        return null; // Panel handled the click
+      }
+    }
+    
     // Use watercolor UI renderer (all phases complete)
     if (this.watercolorUIRenderer) {
       return this.watercolorUIRenderer.checkAbilityClick(mousePos);
     }
     return null;
+  }
+  
+  /**
+   * Toggle developer panel visibility.
+   */
+  toggleDeveloperPanel(): void {
+    if (this.developerPanel) {
+      this.developerPanel.toggle();
+      // Update keyboard context based on panel visibility
+      const keyboardManager = getKeyboardManager();
+      const isVisible = this.developerPanel.getIsVisible();
+      keyboardManager.setContext(isVisible ? 'devPanel' : 'global');
+    }
+  }
+
+  /**
+   * Check if developer panel is visible.
+   */
+  isDeveloperPanelVisible(): boolean {
+    return this.developerPanel ? this.developerPanel.getIsVisible() : false;
+  }
+
+  /**
+   * Check if developer panel search is focused.
+   */
+  isDeveloperPanelSearchFocused(): boolean {
+    // This would need to be exposed from DeveloperPanel if needed
+    // For now, return false - the panel will handle its own focus
+    return false;
+  }
+
+  /**
+   * Handle wheel event for developer panel scrolling.
+   */
+  handleWheel(deltaY: number): void {
+    if (this.developerPanel && this.developerPanel.getIsVisible()) {
+      this.developerPanel.handleWheel(deltaY);
+    }
+  }
+
+  /**
+   * Handle keyboard input for developer panel.
+   */
+  handleDeveloperPanelKey(event: KeyboardEvent): boolean {
+    if (this.developerPanel && this.developerPanel.getIsVisible()) {
+      return this.developerPanel.handleKeyEvent(event);
+    }
+    return false;
+  }
+  
+  private gameInstance: Game | null = null;
+  
+  /**
+   * Set game instance for settings propagation.
+   */
+  setGameInstance(game: Game): void {
+    this.gameInstance = game;
+  }
+  
+  /**
+   * Handle setting changes from developer panel.
+   */
+  private handleSettingChange(key: string, value: number): void {
+    if (!this.gameInstance) return;
+    
+    switch (key) {
+      case 'MAX_SERENITY':
+        this.gameInstance.updateMaxSerenity(value);
+        break;
+      case 'PLAYER_RADIUS':
+        this.updateCenterRadius(value);
+        break;
+      case 'PLAYER_OPACITY':
+        // Opacity is updated directly in GameScene from GameConfig each frame
+        // No action needed - it will be picked up on next render
+        break;
+      // Breath settings are already updated in GameConfig, they propagate automatically
+      case 'BREATHE_AOE_BUFFER':
+      case 'BREATHE_CYCLE_DURATION':
+      case 'BREATHE_AOE_GROWTH':
+        // Cycle duration is read from config each frame in AbilitySystem, no action needed
+        // Radius changes are reflected immediately in breath AoE visual
+        break;
+      case 'DEBUG_SHOW_RINGS':
+        // Debug rings are updated each frame in GameScene.updateDebugRings()
+        // No action needed - it will be picked up on next render
+        break;
+    }
+  }
+  
+  /**
+   * Update center radius (wrapper for GameScene).
+   */
+  updateCenterRadius(value: number): void {
+    if (this.gameScene) {
+      this.gameScene.updateCenterRadius(value);
+    }
   }
   
   renderStatsTable(state: GameState, stressors: any[]): void {
@@ -309,6 +496,11 @@ export class ThreeRenderer {
     if (this.fluidReflectionScreen) {
       this.fluidReflectionScreen.setDimensions(width, height);
       this.fluidReflectionScreen.setTargetPosition({ x: width / 2, y: height / 2 });
+    }
+    
+    // Resize developer panel
+    if (this.developerPanel) {
+      this.developerPanel.setDimensions(width, height);
     }
     
     // Update game scene dimensions

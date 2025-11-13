@@ -43,9 +43,9 @@ export const AbilityBranchConfig: Record<string, Record<number, AbilityBranch[]>
       {
         id: 'breathe_lingering',
         name: 'Lingering',
-        description: 'Damage persists 2s after leaving aura',
+        description: 'Damage persists 2s after leaving breath AoE',
         effects: [
-          { type: 'duration', modifier: 2, description: 'Damage persists 2s after leaving aura' }
+          { type: 'duration', modifier: 2, description: 'Damage persists 2s after leaving breath AoE' }
         ]
       },
       {
