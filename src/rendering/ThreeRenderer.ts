@@ -13,6 +13,7 @@ import { FluidStatsTable } from './ui/elements/FluidStatsTable';
 import { FluidReflectionScreen } from './ui/elements/FluidReflectionScreen';
 import { DeveloperPanel } from '../ui/DeveloperPanel';
 import { getKeyboardManager } from '../utils/KeyboardManager';
+import { getFPSCounter } from '../utils/FPSCounter';
 import { smoothstep } from '../utils/MathUtils';
 import { getBreathRadius } from '../utils/BreathUtils';
 import { StressorFluidIntegration } from './watercolor/StressorFluidIntegration';
@@ -31,8 +32,8 @@ export class ThreeRenderer {
   private abilityEffects: AbilityEffects | null = null;
   private width: number;
   private height: number;
-  private fps: number = 60;
-  private lastFrameTime: number = performance.now();
+  private lastLODUpdate: number = 0;
+  private cachedLOD: { resolution: number; injectionRate: number } | null = null;
   
   // UI overlay canvas (separate from WebGL canvas)
   private uiCanvas: HTMLCanvasElement;
@@ -164,11 +165,8 @@ export class ThreeRenderer {
   ): void {
     const serenityRatio = state.serenity / state.maxSerenity;
     
-    // Calculate FPS for LOD
-    const now = performance.now();
-    const frameDelta = now - this.lastFrameTime;
-    this.fps = frameDelta > 0 ? 1000 / frameDelta : 60;
-    this.lastFrameTime = now;
+    // Get smoothed FPS from unified counter (already updated in main.ts)
+    const fps = getFPSCounter().getFPS();
     
     // Update watercolor state controller (for fluid parameters)
     this.watercolorController.update(serenityRatio);
@@ -196,12 +194,21 @@ export class ThreeRenderer {
       
       this.fluid.setParams(fluidParams);
       
-      // Apply LOD based on FPS and stressor count
+      // Apply LOD based on FPS and stressor count (throttled)
       if (stressors) {
-        const lod = this.fluid.calculateLOD(this.fps, stressors.length);
-        this.fluid.setResolution(lod.resolution);
-        if (this.stressorFluidIntegration) {
-          this.stressorFluidIntegration.setInjectionRate(lod.injectionRate);
+        const now = performance.now();
+        // Only update LOD at throttled interval
+        if (now - this.lastLODUpdate >= GameConfig.LOD_UPDATE_INTERVAL_MS) {
+          this.lastLODUpdate = now;
+          this.cachedLOD = this.fluid.calculateLOD(fps, stressors.length);
+        }
+        
+        // Use cached LOD values
+        if (this.cachedLOD) {
+          this.fluid.setResolution(this.cachedLOD.resolution);
+          if (this.stressorFluidIntegration) {
+            this.stressorFluidIntegration.setInjectionRate(this.cachedLOD.injectionRate);
+          }
         }
       }
       

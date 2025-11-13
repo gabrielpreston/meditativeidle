@@ -4,6 +4,7 @@ import { Vector2 } from './types';
 import { GameConfig } from './GameConfig';
 import { dev } from './utils/dev';
 import { getKeyboardManager } from './utils/KeyboardManager';
+import { getFPSCounter } from './utils/FPSCounter';
 
 class GameApp {
   private canvas: HTMLCanvasElement;
@@ -11,9 +12,7 @@ class GameApp {
   private renderer: ThreeRenderer;
   
   private lastFrameTime: number = 0;
-  private frameCount: number = 0;
-  private fps: number = 60;
-  private lastFpsUpdate: number = 0;
+  private lastFpsCheck: number = 0;
   
   private isRunning: boolean = false;
   
@@ -22,6 +21,7 @@ class GameApp {
   private unregisterHandlers: (() => void)[] = [];
   
   private performanceMode: boolean = false;
+  private lastPerformanceModeChange: number = 0;
 
   constructor() {
     this.canvas = document.getElementById('gameCanvas') as HTMLCanvasElement;
@@ -127,6 +127,8 @@ class GameApp {
   private start(): void {
     this.isRunning = true;
     this.lastFrameTime = performance.now();
+    this.lastFpsCheck = performance.now();
+    this.lastPerformanceModeChange = performance.now();
     this.animate();
   }
 
@@ -136,21 +138,30 @@ class GameApp {
     const deltaTime = (currentTime - this.lastFrameTime) / 1000;
     this.lastFrameTime = currentTime;
     
-    // Update FPS
-    this.frameCount++;
-    if (currentTime - this.lastFpsUpdate >= 1000) {
-      this.fps = this.frameCount;
-      this.frameCount = 0;
-      this.lastFpsUpdate = currentTime;
+    // Update unified FPS counter (called once per frame)
+    getFPSCounter().update(deltaTime);
+    
+    // Performance mode - check every second using smoothed FPS with hysteresis and cooldown
+    if (currentTime - this.lastFpsCheck >= 1000) {
+      this.lastFpsCheck = currentTime;
+      const fps = getFPSCounter().getFPS();
+      const timeSinceLastChange = currentTime - this.lastPerformanceModeChange;
       
-      // Performance mode - only log on transitions to prevent spam
-      const shouldBeInPerformanceMode = this.fps < GameConfig.PERFORMANCE_THRESHOLD;
-      if (shouldBeInPerformanceMode && !this.performanceMode) {
-        this.performanceMode = true;
-        dev.warn('Performance mode activated', { fps: this.fps });
-      } else if (!shouldBeInPerformanceMode && this.performanceMode && this.fps >= GameConfig.TARGET_FPS) {
-        this.performanceMode = false;
-        dev.log('Performance mode deactivated', { fps: this.fps });
+      // Check cooldown before allowing mode change
+      if (timeSinceLastChange >= GameConfig.PERFORMANCE_MODE_COOLDOWN_MS) {
+        // Use different thresholds for activation vs deactivation (hysteresis)
+        const shouldBeInPerformanceMode = fps < GameConfig.PERFORMANCE_MODE_ACTIVATE_THRESHOLD;
+        const shouldExitPerformanceMode = fps >= GameConfig.PERFORMANCE_MODE_DEACTIVATE_THRESHOLD;
+        
+        if (shouldBeInPerformanceMode && !this.performanceMode) {
+          this.performanceMode = true;
+          this.lastPerformanceModeChange = currentTime;
+          dev.warn('Performance mode activated', { fps });
+        } else if (shouldExitPerformanceMode && this.performanceMode) {
+          this.performanceMode = false;
+          this.lastPerformanceModeChange = currentTime;
+          dev.log('Performance mode deactivated', { fps });
+        }
       }
     }
     

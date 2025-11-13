@@ -179,8 +179,15 @@ export const GameConfig = {
   
   // Performance
   TARGET_FPS: 60,
-  PERFORMANCE_THRESHOLD: 55,
+  PERFORMANCE_THRESHOLD: 55, // Keep for backward compatibility
+  PERFORMANCE_MODE_ACTIVATE_THRESHOLD: 50, // Lower threshold for activation (hysteresis)
+  PERFORMANCE_MODE_DEACTIVATE_THRESHOLD: 58, // Higher threshold for deactivation (hysteresis)
+  PERFORMANCE_MODE_COOLDOWN_MS: 2000, // Cooldown between mode changes
   TELEMETRY_INTERVAL: 1000, // ms
+  
+  // Performance - LOD Configuration
+  LOD_UPDATE_INTERVAL_MS: 500, // Throttle LOD updates to this interval
+  LOD_HYSTERESIS_FPS: 5, // FPS difference required to change quality level
   
   // Debug
   DEBUG_SHOW_RINGS: 0, // 0 = off, 1 = on - Show concentric debug rings every 50px

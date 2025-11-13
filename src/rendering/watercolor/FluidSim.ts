@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { RGB, Vector2, EnhancedDyeInjection } from '../../types';
+import { GameConfig } from '../../GameConfig';
 
 export interface FluidParams {
   viscosity: number;
@@ -1081,17 +1082,24 @@ export class FluidSim {
   }
   
   calculateLOD(fps: number, stressorCount: number): { resolution: number; injectionRate: number } {
-    // High quality: 60+ FPS, <30 stressors
-    if (fps >= 60 && stressorCount < 30) {
+    // Apply hysteresis: bias thresholds based on current resolution
+    // If currently at high quality, require higher FPS to maintain it
+    // If currently at low quality, require lower FPS to improve it
+    const hysteresisBias = GameConfig.LOD_HYSTERESIS_FPS;
+    const bias = this.currentResolutionScale >= 1.0 ? hysteresisBias : -hysteresisBias;
+    const effectiveFps = fps + bias;
+    
+    // High quality: 60+ FPS (with bias), <30 stressors
+    if (effectiveFps >= 60 && stressorCount < 30) {
       return { resolution: 1.0, injectionRate: 1.0 };
     }
     
-    // Medium quality: 50-60 FPS, 30-50 stressors
-    if (fps >= 50 && stressorCount < 50) {
+    // Medium quality: 50-60 FPS (with bias), 30-50 stressors
+    if (effectiveFps >= 50 && stressorCount < 50) {
       return { resolution: 0.75, injectionRate: 0.8 };
     }
     
-    // Low quality: <50 FPS or 50+ stressors
+    // Low quality: <50 FPS (with bias) or 50+ stressors
     return { resolution: 0.5, injectionRate: 0.6 };
   }
   
