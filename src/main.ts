@@ -80,7 +80,7 @@ class GameApp {
       context: 'devPanel',
       // No key specified = catch-all handler
       handler: (event) => {
-        // Route to dev panel handler (backtick already handled by global handler)
+        // Route to dev panel handler
         const handled = this.renderer.handleDeveloperPanelKey(event);
         if (handled) {
           event.preventDefault();

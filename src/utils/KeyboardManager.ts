@@ -93,7 +93,12 @@ export class KeyboardManager {
     const matchingHandlers = this.findMatchingHandlers(event, key);
     
     for (const handler of matchingHandlers) {
-      // Check debouncing
+      // Check context FIRST (before debounce) - handlers not in context shouldn't be checked for debounce
+      if (handler.context && handler.context !== this.activeContext) {
+        continue; // Skip handlers not in current context
+      }
+
+      // Check debouncing AFTER context check
       if (handler.debounceMs) {
         const lastPress = this.lastKeyPress.get(key) || 0;
         const now = Date.now();
@@ -101,11 +106,6 @@ export class KeyboardManager {
           continue; // Skip this handler due to debounce
         }
         this.lastKeyPress.set(key, now);
-      }
-
-      // Check context
-      if (handler.context && handler.context !== this.activeContext) {
-        continue; // Skip handlers not in current context
       }
 
       // Check modifiers
@@ -143,10 +143,29 @@ export class KeyboardManager {
    * Find handlers that match the event.
    */
   private findMatchingHandlers(event: KeyboardEvent, normalizedKey: string): KeyboardHandler[] {
+    // First, find all handlers that match the key specifically (not catch-all)
+    const specificHandlers = this.handlers.filter(handler => {
+      if (!handler.key) {
+        return false; // Skip catch-all handlers for now
+      }
+      const keys = Array.isArray(handler.key) ? handler.key : [handler.key];
+      return keys.some(k => {
+        // Support both e.code (physical) and e.key (character)
+        return k === event.code || k === event.key || k === normalizedKey;
+      });
+    });
+    
+    // If there are specific handlers for this key, exclude catch-all handlers
+    // This prevents catch-all handlers from interfering with specific key handlers
+    if (specificHandlers.length > 0) {
+      return specificHandlers;
+    }
+    
+    // If no specific handlers, include catch-all handlers
     return this.handlers.filter(handler => {
       // If no key specified, it's a catch-all handler
       if (!handler.key) {
-        return true;
+        return true; // Include catch-all handlers when no specific handlers exist
       }
       const keys = Array.isArray(handler.key) ? handler.key : [handler.key];
       return keys.some(k => {

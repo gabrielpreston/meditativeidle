@@ -246,13 +246,20 @@ export class ThreeRenderer {
     // Render with post-processing
     this.composer.render();
     
-    // Render developer panel if visible
-    if (this.developerPanel && this.developerPanel.getIsVisible()) {
+    // Render developer panel if visible or animating closed
+    // Continue updating/rendering while animating to allow closing animation to complete
+    if (this.developerPanel && this.developerPanel.isVisibleOrAnimating()) {
+      // Clear UI canvas before rendering to prevent cascading artifacts
+      this.uiCtx.clearRect(0, 0, this.width, this.height);
+      
       const fluidField = this.watercolorUIRenderer?.getFluidField();
       if (fluidField) {
         this.developerPanel.update(deltaTime, fluidField, []);
       }
       this.developerPanel.render(this.uiCtx, Date.now() * 0.001);
+    } else {
+      // Clear UI canvas when panel is not visible to remove any lingering artifacts
+      this.uiCtx.clearRect(0, 0, this.width, this.height);
     }
   }
   

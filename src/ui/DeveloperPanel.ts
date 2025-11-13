@@ -118,6 +118,14 @@ export class DeveloperPanel extends FluidUIElement {
   }
 
   /**
+   * Check if panel is visible or still animating (opacity > 0 or slideProgress > 0).
+   * Used to determine if panel should continue updating/rendering during close animation.
+   */
+  isVisibleOrAnimating(): boolean {
+    return this.isVisible || this.opacity > 0 || this.slideProgress > 0;
+  }
+
+  /**
    * Handle wheel event for scrolling.
    */
   handleWheel(deltaY: number): boolean {

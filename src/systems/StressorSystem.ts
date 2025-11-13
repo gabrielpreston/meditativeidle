@@ -3,7 +3,6 @@ import { GameConfig } from '../GameConfig';
 import { SeededRandom } from '../utils/Random';
 import { distance, normalize, angleTo, multiply, add, subtract } from '../utils/MathUtils';
 import { ISystem, SystemContext } from './ISystem';
-import { dev } from '../utils/dev';
 import { MovementSpeedCalculator } from './movement/MovementSpeedCalculator';
 import { getAvailableStressorTypes } from '../config/WaveProgressionConfig';
 import { MovementBehaviorFactory } from './movement/MovementBehaviorFactory';
@@ -135,15 +134,7 @@ export class StressorSystem implements ISystem {
           const newSerenity = Math.max(0, currentSerenity - GameConfig.STRESSOR_COLLISION_DAMAGE);
           context.modifyState({ serenity: newSerenity });
           
-          // Combat log: Stressor hit player
-          dev.log('[Combat] Stressor hit player', {
-            stressorId: stressor.id,
-            stressorType: stressor.type,
-            damage: GameConfig.STRESSOR_COLLISION_DAMAGE,
-            serenityBefore: currentSerenity,
-            serenityAfter: newSerenity,
-            wave: context.state.wave
-          });
+          // Stressor hit player - damage applied
         }
         
         // Kill the stressor regardless of serenity (prevent it from hitting again)
@@ -316,33 +307,8 @@ export class StressorSystem implements ISystem {
         return true; // Already dead
       }
       
-      const healthBefore = stressor.health;
       stressor.health -= damage;
       const isDead = stressor.health <= 0;
-      
-      // Combat log: Only log deaths and significant health milestones (every 25% health lost)
-      if (isDead) {
-        dev.log('[Combat] Stressor killed', {
-          stressorId: stressor.id,
-          stressorType: stressor.type,
-          damage: damage,
-          healthBefore: healthBefore,
-          finalHealth: stressor.health
-        });
-      } else {
-        // Log when health crosses 25% thresholds
-        const healthPercentBefore = Math.floor((healthBefore / stressor.maxHealth) * 4) / 4; // 0, 0.25, 0.5, 0.75, 1.0
-        const healthPercentAfter = Math.floor((stressor.health / stressor.maxHealth) * 4) / 4;
-        if (healthPercentAfter < healthPercentBefore) {
-          dev.log('[Combat] Stressor health milestone', {
-            stressorId: stressor.id,
-            stressorType: stressor.type,
-            healthPercent: healthPercentAfter,
-            health: Math.max(0, stressor.health),
-            maxHealth: stressor.maxHealth
-          });
-        }
-      }
       
       return isDead;
     }
