@@ -1,5 +1,5 @@
 import { Game } from './Game';
-import { ThreeRenderer } from './rendering/ThreeRenderer';
+import { CanvasRenderer } from './rendering/CanvasRenderer';
 import { Vector2 } from './types';
 import { GameConfig } from './GameConfig';
 import { dev } from './utils/dev';
@@ -9,7 +9,7 @@ import { getFPSCounter } from './utils/FPSCounter';
 class GameApp {
   private canvas: HTMLCanvasElement;
   private game: Game;
-  private renderer: ThreeRenderer;
+  private renderer: CanvasRenderer;
   
   private lastFrameTime: number = 0;
   private lastFpsCheck: number = 0;
@@ -29,7 +29,7 @@ class GameApp {
     this.setupCanvas();
     
     this.game = new Game(this.canvas.width, this.canvas.height);
-    this.renderer = new ThreeRenderer(this.canvas);
+    this.renderer = new CanvasRenderer(this.canvas);
     
     // Set game instance in renderer for settings propagation
     this.renderer.setGameInstance(this.game);
@@ -44,7 +44,7 @@ class GameApp {
     const resize = () => {
       this.canvas.width = window.innerWidth;
       this.canvas.height = window.innerHeight;
-      // Notify renderer of resize (works for both Renderer and ThreeRenderer)
+      // Notify renderer of resize
       if (this.renderer && typeof (this.renderer as any).resize === 'function') {
         (this.renderer as any).resize(this.canvas.width, this.canvas.height);
       }
