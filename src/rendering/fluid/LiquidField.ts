@@ -51,6 +51,35 @@ export class LiquidField {
   }
   
   /**
+   * Set grid resolution (resizes grid, preserving data where possible)
+   */
+  setResolution(width: number, height: number): void {
+    if (width === this.gridWidth && height === this.gridHeight) {
+      return; // No change needed
+    }
+    
+    // Create new grid
+    const newGrid: LiquidCell[][] = [];
+    for (let y = 0; y < height; y++) {
+      newGrid[y] = [];
+      for (let x = 0; x < width; x++) {
+        // Map old grid coordinates to new grid coordinates
+        const oldX = Math.floor((x / width) * this.gridWidth);
+        const oldY = Math.floor((y / height) * this.gridHeight);
+        const clampedOldX = Math.max(0, Math.min(this.gridWidth - 1, oldX));
+        const clampedOldY = Math.max(0, Math.min(this.gridHeight - 1, oldY));
+        
+        // Copy cell data from old grid (or create empty if scaling up)
+        newGrid[y][x] = { ...this.grid[clampedOldY][clampedOldX] };
+      }
+    }
+    
+    this.grid = newGrid;
+    this.gridWidth = width;
+    this.gridHeight = height;
+  }
+  
+  /**
    * Get cell at grid coordinates (clamped to bounds)
    */
   getCell(x: number, y: number): LiquidCell {
@@ -214,6 +243,11 @@ export class LiquidField {
    * Call this every frame to advance the simulation
    */
   update(deltaTime: number, globalTurbulence: number = 0): void {
+    // Validate deltaTime - prevent NaN or invalid values
+    if (!Number.isFinite(deltaTime) || deltaTime <= 0 || deltaTime > 1) {
+      deltaTime = 0.016; // Default to ~60 FPS
+    }
+    
     this.time += deltaTime;
     // Create temporary grid for diffusion calculation
     const tempGrid: LiquidCell[][] = [];
@@ -271,9 +305,20 @@ export class LiquidField {
       for (let x = 0; x < this.gridWidth; x++) {
         const cell = tempGrid[y][x];
         
+        // Validate flow values - ensure they're finite numbers
+        const flowX = Number.isFinite(cell.flowX) ? cell.flowX : 0;
+        const flowY = Number.isFinite(cell.flowY) ? cell.flowY : 0;
+        
         // Sample pigment from upstream position (backward advection)
-        const sourceX = x - cell.flowX * deltaTime * 60; // Scale for 60 FPS
-        const sourceY = y - cell.flowY * deltaTime * 60;
+        const sourceX = x - flowX * deltaTime * 60; // Scale for 60 FPS
+        const sourceY = y - flowY * deltaTime * 60;
+        
+        // Validate source coordinates
+        if (!Number.isFinite(sourceX) || !Number.isFinite(sourceY)) {
+          // If source is invalid, just copy current cell without advection
+          this.grid[y][x] = { ...cell };
+          continue;
+        }
         
         // Bilinear interpolation for sub-grid positions
         const x0 = Math.floor(sourceX);
@@ -283,16 +328,34 @@ export class LiquidField {
         const fx = sourceX - x0;
         const fy = sourceY - y0;
         
-        // Clamp to grid bounds
-        const x0Clamped = Math.max(0, Math.min(this.gridWidth - 1, x0));
-        const y0Clamped = Math.max(0, Math.min(this.gridHeight - 1, y0));
-        const x1Clamped = Math.max(0, Math.min(this.gridWidth - 1, x1));
-        const y1Clamped = Math.max(0, Math.min(this.gridHeight - 1, y1));
+        // Clamp to grid bounds and validate indices
+        const x0Clamped = Math.max(0, Math.min(this.gridWidth - 1, Math.floor(x0)));
+        const y0Clamped = Math.max(0, Math.min(this.gridHeight - 1, Math.floor(y0)));
+        const x1Clamped = Math.max(0, Math.min(this.gridWidth - 1, Math.floor(x1)));
+        const y1Clamped = Math.max(0, Math.min(this.gridHeight - 1, Math.floor(y1)));
         
-        const c00 = tempGrid[y0Clamped][x0Clamped];
-        const c10 = tempGrid[y0Clamped][x1Clamped];
-        const c01 = tempGrid[y1Clamped][x0Clamped];
-        const c11 = tempGrid[y1Clamped][x1Clamped];
+        // Ensure indices are valid integers
+        if (!Number.isFinite(x0Clamped) || !Number.isFinite(y0Clamped) ||
+            !Number.isFinite(x1Clamped) || !Number.isFinite(y1Clamped) ||
+            x0Clamped < 0 || y0Clamped < 0 || x1Clamped < 0 || y1Clamped < 0 ||
+            x0Clamped >= this.gridWidth || y0Clamped >= this.gridHeight ||
+            x1Clamped >= this.gridWidth || y1Clamped >= this.gridHeight) {
+          // If indices are invalid, just copy current cell
+          this.grid[y][x] = { ...cell };
+          continue;
+        }
+        
+        const c00 = tempGrid[y0Clamped]?.[x0Clamped];
+        const c10 = tempGrid[y0Clamped]?.[x1Clamped];
+        const c01 = tempGrid[y1Clamped]?.[x0Clamped];
+        const c11 = tempGrid[y1Clamped]?.[x1Clamped];
+        
+        // Validate cells exist before accessing properties
+        if (!c00 || !c10 || !c01 || !c11) {
+          // If any cell is missing, just copy current cell
+          this.grid[y][x] = { ...cell };
+          continue;
+        }
         
         // Bilinear interpolation
         const r = (c00.pigmentR * (1 - fx) + c10.pigmentR * fx) * (1 - fy) +
@@ -302,13 +365,15 @@ export class LiquidField {
         const b = (c00.pigmentB * (1 - fx) + c10.pigmentB * fx) * (1 - fy) +
                   (c01.pigmentB * (1 - fx) + c11.pigmentB * fx) * fy;
         
-        // Apply flow decay
-        let newFlowX = cell.flowX * this.flowDecay;
-        let newFlowY = cell.flowY * this.flowDecay;
+        // Apply flow decay (use validated flow values)
+        let newFlowX = flowX * this.flowDecay;
+        let newFlowY = flowY * this.flowDecay;
         
         // Apply turbulence (noise-based flow modification)
-        const turbulence = cell.turbulence + globalTurbulence;
-        if (turbulence > 0.01) {
+        const cellTurbulence = Number.isFinite(cell.turbulence) ? cell.turbulence : 0;
+        const validGlobalTurbulence = Number.isFinite(globalTurbulence) ? globalTurbulence : 0;
+        const turbulence = cellTurbulence + validGlobalTurbulence;
+        if (turbulence > 0.01 && Number.isFinite(this.time)) {
           // Simple noise function for turbulence
           const noiseX = Math.sin(x * 0.1 + this.time * 2) * Math.cos(y * 0.1 + this.time * 1.5);
           const noiseY = Math.cos(x * 0.1 + this.time * 1.5) * Math.sin(y * 0.1 + this.time * 2);
@@ -317,13 +382,21 @@ export class LiquidField {
           newFlowY += noiseY * turbulenceStrength;
         }
         
+        // Ensure flow values are finite
+        if (!Number.isFinite(newFlowX)) newFlowX = 0;
+        if (!Number.isFinite(newFlowY)) newFlowY = 0;
+        
+        // Calculate and validate turbulence
+        const newTurbulence = cellTurbulence * 0.95 + validGlobalTurbulence * 0.05;
+        const finalTurbulence = Number.isFinite(newTurbulence) ? Math.max(0, newTurbulence) : 0;
+        
         this.grid[y][x] = {
           pigmentR: Math.max(0, Math.min(1, r)),
           pigmentG: Math.max(0, Math.min(1, g)),
           pigmentB: Math.max(0, Math.min(1, b)),
           flowX: newFlowX,
           flowY: newFlowY,
-          turbulence: cell.turbulence * 0.95 + globalTurbulence * 0.05 // Decay turbulence, add global
+          turbulence: finalTurbulence
         };
       }
     }

@@ -38,6 +38,10 @@ export class CanvasRenderer {
   private abilityRenderer: AbilityRenderer;
   private liquidWatermediaController: LiquidWatermediaStateController;
   
+  // Performance mode state
+  private currentPerformanceMode: boolean = false;
+  private frameSkipCounter: number = 0;
+  
   // UI overlay canvas (separate from game canvas)
   private uiCanvas: HTMLCanvasElement;
   private uiCtx: CanvasRenderingContext2D;
@@ -65,9 +69,13 @@ export class CanvasRenderer {
     }
     this.ctx = ctx;
     
-    // Initialize grid-based fluid system (512x288 grid)
-    this.liquidField = new LiquidField(512, 288);
-    this.fluidRenderer = new FluidRenderer(512, 288);
+    // Initialize grid-based fluid system
+    // Start with lower resolution for better performance (256x144)
+    // Can be increased to 512x288 in normal mode if performance allows
+    const gridWidth = 256;
+    const gridHeight = 144;
+    this.liquidField = new LiquidField(gridWidth, gridHeight);
+    this.fluidRenderer = new FluidRenderer(gridWidth, gridHeight);
     this.effectPrimitives = new EffectPrimitives(this.width, this.height);
     this.stressorFluidBridge = new StressorFluidBridge(this.width, this.height);
     this.stressorRenderer = new StressorRenderer(this.width, this.height);
@@ -140,30 +148,50 @@ export class CanvasRenderer {
   ): void {
     const serenityRatio = state.serenity / state.maxSerenity;
     
+    // Handle performance mode changes
+    if (performanceMode !== this.currentPerformanceMode) {
+      this.currentPerformanceMode = performanceMode;
+      if (performanceMode) {
+        // Reduce grid resolution for performance mode (128x72 = 4x fewer cells than default)
+        this.liquidField.setResolution(128, 72);
+        this.fluidRenderer.setGridDimensions(128, 72);
+      } else {
+        // Restore default resolution (256x144)
+        this.liquidField.setResolution(256, 144);
+        this.fluidRenderer.setGridDimensions(256, 144);
+      }
+    }
+    
     // Update liquid watermedia state controller (for UI system)
     this.liquidWatermediaController.update(serenityRatio);
     
-    // Update fluid field parameters based on serenity
-    const diffusionRate = this.liquidWatermediaController.getDiffusionRate();
-    this.liquidField.setDiffusionRate(diffusionRate * 0.1); // Scale to reasonable range
+    // In performance mode, skip fluid updates every other frame
+    const shouldUpdateFluid = !performanceMode || (this.frameSkipCounter % 2 === 0);
+    this.frameSkipCounter++;
     
-    // Calculate global turbulence based on serenity (low serenity = more turbulence)
-    const globalTurbulence = (1 - serenityRatio) * 0.3; // 0 to 0.3
-    
-    // Update fluid simulation
-    this.liquidField.update(deltaTime, globalTurbulence);
-    
-    // Update effect primitives
-    this.effectPrimitives.update(this.liquidField, deltaTime);
-    
-    // Phase 3: Inject stressor dye into fluid field
-    if (stressors && stressors.length > 0) {
-      this.stressorFluidBridge.update(stressors, this.liquidField, serenityRatio);
-    }
-    
-    // Phase 4: Apply ability effects
-    if (systemContext) {
-      this.abilityFluidBridge.update(systemContext, center, serenityRatio, deltaTime);
+    if (shouldUpdateFluid) {
+      // Update fluid field parameters based on serenity
+      const diffusionRate = this.liquidWatermediaController.getDiffusionRate();
+      this.liquidField.setDiffusionRate(diffusionRate * 0.1); // Scale to reasonable range
+      
+      // Calculate global turbulence based on serenity (low serenity = more turbulence)
+      const globalTurbulence = (1 - serenityRatio) * 0.3; // 0 to 0.3
+      
+      // Update fluid simulation
+      this.liquidField.update(deltaTime, globalTurbulence);
+      
+      // Update effect primitives
+      this.effectPrimitives.update(this.liquidField, deltaTime);
+      
+      // Phase 3: Inject stressor dye into fluid field
+      if (stressors && stressors.length > 0) {
+        this.stressorFluidBridge.update(stressors, this.liquidField, serenityRatio);
+      }
+      
+      // Phase 4: Apply ability effects
+      if (systemContext) {
+        this.abilityFluidBridge.update(systemContext, center, serenityRatio, deltaTime);
+      }
     }
     
     // Render fluid field to canvas with serenity-based color grading

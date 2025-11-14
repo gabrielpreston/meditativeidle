@@ -45,33 +45,40 @@ export class AbilityRenderer {
     // Breathe: Pulsing circle
     if (context.isAuraActive()) {
       const breathRadius = getBreathRadius(context.getBreatheCycleProgress());
-      const breathColors = getAbilityColor('breathe', serenityRatio, affirmActive);
-      const color = this.hexToRgb(breathColors.primary);
-      
-      ctx.beginPath();
-      ctx.arc(center.x, center.y, breathRadius, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.4)`;
-      ctx.lineWidth = 3;
-      ctx.stroke();
+      if (Number.isFinite(breathRadius) && breathRadius > 0) {
+        const breathColors = getAbilityColor('breathe', serenityRatio, affirmActive);
+        const color = this.hexToRgb(breathColors.primary);
+        
+        ctx.beginPath();
+        ctx.arc(center.x, center.y, breathRadius, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.4)`;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      }
     }
     
     // Recenter: Expanding ripple
     if (context.isRecenterPulseActive()) {
       const pulseRadius = context.getRecenterPulseRadius();
-      const recenterColors = getAbilityColor('recenter', serenityRatio, affirmActive);
-      const color = this.hexToRgb(recenterColors.primary);
-      
-      ctx.beginPath();
-      ctx.arc(center.x, center.y, pulseRadius, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.6)`;
-      ctx.lineWidth = 4;
-      ctx.stroke();
+      if (Number.isFinite(pulseRadius) && pulseRadius > 0) {
+        const recenterColors = getAbilityColor('recenter', serenityRatio, affirmActive);
+        const color = this.hexToRgb(recenterColors.primary);
+        
+        ctx.beginPath();
+        ctx.arc(center.x, center.y, pulseRadius, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.6)`;
+        ctx.lineWidth = 4;
+        ctx.stroke();
+      }
     }
     
     // Exhale: Expanding rings
     const exhaleWaves = context.getExhaleWaves();
     if (exhaleWaves.length > 0) {
       for (const wave of exhaleWaves) {
+        if (!Number.isFinite(wave.radius) || wave.radius <= 0) continue;
+        if (!Number.isFinite(wave.maxRadius) || wave.maxRadius <= 0) continue;
+        
         const progress = wave.radius / wave.maxRadius;
         const waveColors = getExhaleWaveColor(progress, serenityRatio);
         const color = this.hexToRgb(waveColors.color);
@@ -88,15 +95,20 @@ export class AbilityRenderer {
     // Reflect: Barrier circle
     if (context.isReflectBarrierActive()) {
       const barrierRadius = context.getReflectBarrierRadius();
-      const reflectColors = getAbilityColor('reflect', serenityRatio, false);
-      const color = this.hexToRgb(reflectColors.primary);
-      const pulse = 1 + Math.sin(this.time * 10) * 0.1;
-      
-      ctx.beginPath();
-      ctx.arc(center.x, center.y, barrierRadius * pulse, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.5)`;
-      ctx.lineWidth = 4;
-      ctx.stroke();
+      if (Number.isFinite(barrierRadius) && barrierRadius > 0) {
+        const reflectColors = getAbilityColor('reflect', serenityRatio, false);
+        const color = this.hexToRgb(reflectColors.primary);
+        const pulse = 1 + Math.sin(this.time * 10) * 0.1;
+        const finalRadius = barrierRadius * pulse;
+        
+        if (finalRadius > 0) {
+          ctx.beginPath();
+          ctx.arc(center.x, center.y, finalRadius, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.5)`;
+          ctx.lineWidth = 4;
+          ctx.stroke();
+        }
+      }
     }
     
     // Mantra: Beam line
@@ -123,16 +135,18 @@ export class AbilityRenderer {
       const fieldPos = context.getGroundFieldPosition();
       if (fieldPos) {
         const fieldRadius = context.getGroundFieldRadius();
-        const groundColors = getAbilityColor('ground', serenityRatio, affirmActive);
-        const color = this.hexToRgb(groundColors.primary);
-        
-        ctx.beginPath();
-        ctx.arc(center.x + fieldPos.x, center.y + fieldPos.y, fieldRadius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.3)`;
-        ctx.fill();
-        ctx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.6)`;
-        ctx.lineWidth = 3;
-        ctx.stroke();
+        if (Number.isFinite(fieldRadius) && fieldRadius > 0) {
+          const groundColors = getAbilityColor('ground', serenityRatio, affirmActive);
+          const color = this.hexToRgb(groundColors.primary);
+          
+          ctx.beginPath();
+          ctx.arc(center.x + fieldPos.x, center.y + fieldPos.y, fieldRadius, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.3)`;
+          ctx.fill();
+          ctx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.6)`;
+          ctx.lineWidth = 3;
+          ctx.stroke();
+        }
       }
     }
     
@@ -143,11 +157,13 @@ export class AbilityRenderer {
       
       // Expanding circle
       const maxRadius = Math.max(this.width, this.height) * 0.8;
-      ctx.beginPath();
-      ctx.arc(center.x, center.y, maxRadius, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.8)`;
-      ctx.lineWidth = 6;
-      ctx.stroke();
+      if (Number.isFinite(maxRadius) && maxRadius > 0) {
+        ctx.beginPath();
+        ctx.arc(center.x, center.y, maxRadius, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.8)`;
+        ctx.lineWidth = 6;
+        ctx.stroke();
+      }
     }
   }
   

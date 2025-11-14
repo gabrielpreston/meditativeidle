@@ -38,20 +38,29 @@ export class StressorRenderer {
     serenityRatio: number
   ): void {
     for (const stressor of stressors) {
+      // Validate stressor size
+      if (!Number.isFinite(stressor.size) || stressor.size <= 0) continue;
+      
       // Calculate position relative to center
       const x = center.x + stressor.position.x;
       const y = center.y + stressor.position.y;
+      
+      // Validate position
+      if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
       
       // Get serenity-modulated color
       const color = getStressorColor(stressor.type, serenityRatio);
       
       // Calculate health-based opacity
-      const healthRatio = stressor.health / stressor.maxHealth;
+      const healthRatio = Math.max(0, Math.min(1, stressor.health / stressor.maxHealth));
       const baseOpacity = 0.6 + healthRatio * 0.4; // 0.6 to 1.0
       
       // Add pulse animation (subtle)
       const pulse = Math.sin(this.time * 2) * 0.1 + 1.0; // 0.9 to 1.1
       const radius = stressor.size * pulse;
+      
+      // Validate radius before drawing
+      if (!Number.isFinite(radius) || radius <= 0) continue;
       
       // Draw stressor circle
       ctx.beginPath();
