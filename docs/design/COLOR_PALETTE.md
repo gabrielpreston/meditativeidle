@@ -2,7 +2,7 @@
 
 ## Serenity-Based Color Mappings
 
-The color palette shifts dynamically based on Serenity level, creating visual feedback for the player's emotional state. Colors behave as dyes suspended in liquid, mixing and flowing through the fluid medium.
+The color palette shifts dynamically based on Serenity level, creating visual feedback for the player's emotional state. Colors behave as dyes suspended in liquid, mixing and flowing through the fluid medium through wet-on-wet diffusion and continuous pigment drift.
 
 ### High Serenity (100-80%)
 
@@ -98,13 +98,13 @@ The color palette shifts dynamically based on Serenity level, creating visual fe
 
 ## Color Mixing Rules
 
-Liquid dye mixing follows fluid blending principles:
+Liquid dye mixing follows fluid blending principles through wet-on-wet flow:
 
 - **Blue + Yellow = Green** (used in Ground effects through liquid mixing)
 - **Red + Blue = Purple** (used in Reflect/Mantra through current blending)
 - **Warm + Cool = Neutral Gray** (used in Release turbulent mixing)
 
-When abilities overlap, colors should blend through fluid mixing with transparency, creating new intermediate hues as currents carry dyes together rather than replacing previous layers.
+When abilities overlap, colors should blend through fluid mixing with transparency, creating new intermediate hues as currents carry dyes together through marbling and dispersion rather than replacing previous layers.
 
 ---
 
@@ -118,5 +118,5 @@ Colors are provided as hex values for easy conversion to RGB/HSL. The rendering 
 4. Desaturate colors as Serenity decreases (stagnant liquid)
 5. Increase contrast and boundary definition as Serenity decreases (reduced mixing)
 
-See [WATERCOLOR_ART_DIRECTION.md](./WATERCOLOR_ART_DIRECTION.md) for technical implementation details.
+See [LIQUID_WATERMEDIA_ART_DIRECTION.md](./LIQUID_WATERMEDIA_ART_DIRECTION.md) for technical implementation details.
 

@@ -406,7 +406,7 @@ export class FluidSim {
       }
     `;
     
-    // Composite shader (blends layers with watercolor color mixing)
+    // Composite shader (blends layers with liquid watermedia color mixing)
     const compositeFragmentShader = `
       precision highp float;
       precision highp sampler2D;
@@ -419,9 +419,9 @@ export class FluidSim {
       uniform sampler2D uLayer5;
       uniform int uLayerCount;
       
-      // Subtractive color mixing (watercolor-like)
+      // Subtractive color mixing (liquid watermedia-style)
       vec3 subtractiveMix(vec3 base, vec3 overlay) {
-        // Watercolor subtractive mixing: darker when colors overlap
+        // Liquid watermedia subtractive mixing: darker when colors overlap
         return base * (1.0 - overlay) + overlay * (1.0 - base);
       }
       
@@ -703,7 +703,7 @@ export class FluidSim {
   
   private setupQuad(): void {
     // Following Three.js pattern: OrthographicCamera for fullscreen quad
-    // Same as mattatz WatercolorPass example
+    // Reference: mattatz WatercolorPass example (external library)
     this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     this.scene = new THREE.Scene();
     // Create quad without material initially (material will be set per-pass in blit)

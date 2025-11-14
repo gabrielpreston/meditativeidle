@@ -4,7 +4,7 @@ import { getStressorColor } from '../../config/ColorConfig';
 import { StressorShader } from './StressorShader';
 
 /**
- * StressorRenderer - Renders stressors as Three.js meshes with watercolor shader effects
+ * StressorRenderer - Renders stressors as Three.js meshes with liquid watermedia shader effects
  */
 export class StressorRenderer {
   private scene: THREE.Scene;
@@ -18,7 +18,7 @@ export class StressorRenderer {
     this.width = width;
     this.height = height;
     
-    // Create shader material with watercolor effects
+    // Create shader material with liquid watermedia effects
     this.shaderMaterial = new THREE.ShaderMaterial({
       uniforms: {
         stressorColor: { value: new THREE.Color(1, 0, 0) },

@@ -2,12 +2,12 @@ import { Vector2 } from '../../../types';
 
 /**
  * FluidField generates a velocity field using simplified noise functions.
- * This drives the flowing motion of UI elements, creating a watercolor-like
+ * This drives the flowing motion of UI elements, creating a liquid watermedia-like
  * fluid aesthetic that responds to game state.
  */
 export class FluidField {
   private time: number = 0;
-  private intensity: number = 1.0; // Controlled by serenity/watercolor state
+  private intensity: number = 1.0; // Controlled by serenity/liquid watermedia state
   
   /**
    * Simplified Perlin-like noise using sine waves.
@@ -35,7 +35,7 @@ export class FluidField {
   /**
    * Set the intensity of the fluid field.
    * Higher intensity = more pronounced flow.
-   * Typically controlled by watercolor diffusionRate parameter.
+   * Typically controlled by liquid watermedia diffusionRate parameter.
    */
   setIntensity(intensity: number): void {
     this.intensity = Math.max(0, Math.min(2, intensity)); // Clamp 0-2

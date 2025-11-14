@@ -6,7 +6,7 @@ import { add, multiply } from '../../../utils/MathUtils';
 /**
  * FluidParticle represents a single particle in the dissipation system.
  * Particles flow with the fluid field and gradually fade/spread,
- * creating watercolor-style dissipation effects.
+ * creating liquid watermedia-style dissipation effects.
  */
 export class FluidParticle {
   position: Vector2;

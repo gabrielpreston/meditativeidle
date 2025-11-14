@@ -8,9 +8,9 @@ import { SystemContext } from '../../systems/ISystem';
 /**
  * AbilityEffects - Visual effects rendering for abilities (fluid-only)
  * 
- * Uses fluid dye injection for watercolor-style rendering.
+ * Uses fluid dye injection for liquid watermedia rendering.
  * Design Reference: docs/design/ABILITIES.md
- * Art Direction: docs/design/WATERCOLOR_ART_DIRECTION.md
+ * Art Direction: docs/design/LIQUID_WATERMEDIA_ART_DIRECTION.md
  */
 export class AbilityEffects {
   private width: number;
@@ -207,7 +207,7 @@ export class AbilityEffects {
     const pulseFactor = 1 + (breatheIntensity * 0.2);
     const pulsedRadius = radius * pulseFactor;
     
-    // Use watercolor color palette
+    // Use liquid watermedia color palette
     const colors = getAbilityColor('breathe', serenityRatio, affirmActive);
     const color = this.hexToRGB(colors.primary);
     
@@ -236,7 +236,7 @@ export class AbilityEffects {
     
     const effectiveRadius = pulseRadius * affirmAmplification;
     
-    // Use watercolor color palette (Recenter uses translucent blue-green, golden under Affirm)
+    // Use liquid watermedia color palette (Recenter uses translucent blue-green, golden under Affirm)
     const colors = getAbilityColor('recenter', serenityRatio, affirmActive);
     const color = this.hexToRGB(colors.primary);
     
@@ -329,7 +329,7 @@ export class AbilityEffects {
     const pulse = 1 + Math.sin(Date.now() * 0.01) * 0.1;
     const pulsedRadius = radius * pulse;
     
-    // Use watercolor color palette (clean water effect, shifts hue when hit)
+    // Use liquid watermedia color palette (clean water effect, shifts hue when hit)
     const colors = getAbilityColor('reflect', serenityRatio, false);
     const color = this.hexToRGB(colors.primary);
     
@@ -361,7 +361,7 @@ export class AbilityEffects {
     
     const pulse = 0.8 + (breatheCycleProgress * 0.2);
     
-    // Use watercolor color palette (focused indigo → deep violet, gilded under Affirm)
+    // Use liquid watermedia color palette (focused indigo → deep violet, gilded under Affirm)
     const colors = getAbilityColor('mantra', serenityRatio, affirmActive);
     const color = this.hexToRGB(colors.primary);
     
@@ -389,7 +389,7 @@ export class AbilityEffects {
   ): void {
     if (!this.fluid || !fieldPos || fieldRadius <= 0) return;
     
-    // Use watercolor color palette (earthy brown-green → warm ochre, dries to muted gray)
+    // Use liquid watermedia color palette (earthy brown-green → warm ochre, dries to muted gray)
     const colors = getAbilityColor('ground', serenityRatio, false);
     const color = this.hexToRGB(colors.primary);
     
@@ -416,7 +416,7 @@ export class AbilityEffects {
     
     const maxRadius = AbilityConfig.RELEASE_RADIUS;
     
-    // Use watercolor color palette (full spectrum → muted gray → pastel recovery)
+    // Use liquid watermedia color palette (full spectrum → muted gray → pastel recovery)
     const colors = getReleaseColor(serenityRatio);
     const color = this.hexToRGB(colors.color);
     
@@ -447,7 +447,7 @@ export class AbilityEffects {
     const pulse = 1 + Math.sin(Date.now() * 0.01) * 0.2;
     const pulsedRadius = radius * pulse;
     
-    // Use watercolor color palette (golden glaze → warm ochre)
+    // Use liquid watermedia color palette (golden glaze → warm ochre)
     const colors = getAbilityColor('affirm', serenityRatio, false);
     const color = this.hexToRGB(colors.primary);
     

@@ -5,7 +5,7 @@ import { GameConfig } from '../../../GameConfig';
 import { smoothstep } from '../../../utils/MathUtils';
 
 /**
- * FluidStatsTable renders the stats table with watercolor effects.
+ * FluidStatsTable renders the stats table with liquid watermedia effects.
  * The panel has an organic, flowing shape with text that blends and flows.
  */
 export class FluidStatsTable extends FluidUIElement {
@@ -165,7 +165,7 @@ export class FluidStatsTable extends FluidUIElement {
     ctx.lineWidth = 3;
     ctx.stroke();
     
-    // Title with watercolor effect
+    // Title with liquid watermedia effect
     ctx.fillStyle = Color.fromHex(GameConfig.COLOR_HIGH_SERENITY.gold)
       .withAlpha(this.opacity).toString();
     ctx.font = 'bold 24px serif';

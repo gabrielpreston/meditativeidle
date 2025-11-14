@@ -1,4 +1,4 @@
-# 🫧 Abilities Overview (Liquid Watercolor Expression)
+# 🫧 Abilities Overview (Liquid Watermedia Expression)
 
 > The battlefield is a fluid medium, and the psyche flows its defense.
 > Each ability is both a mechanic and a current — color, breath, and balance in motion through liquid.
@@ -300,7 +300,7 @@ All abilities scale linearly with level upgrades, maintaining balance while prov
 * Debuff abilities: Control + damage reduction + vulnerability
 * Non-offensive abilities: Recovery + capacity building
 
-The liquid watercolor aesthetic ensures visual coherence regardless of power level.
+The liquid watermedia aesthetic ensures visual coherence regardless of power level.
 
 ### Visual Coherence
 

@@ -5,7 +5,7 @@ import { GameConfig } from '../../../GameConfig';
 import { smoothstep } from '../../../utils/MathUtils';
 
 /**
- * FluidWaveNumber renders the wave number with watercolor-style effects.
+ * FluidWaveNumber renders the wave number with liquid watermedia-style effects.
  * The number flows and has decorative organic borders that bleed color.
  */
 export class FluidWaveNumber extends FluidUIElement {
@@ -63,7 +63,7 @@ export class FluidWaveNumber extends FluidUIElement {
     ctx.lineWidth = 2;
     ctx.stroke();
     
-    // Wave number text (large, watercolor style)
+    // Wave number text (large, liquid watermedia style)
     ctx.fillStyle = this.color.toString();
     ctx.font = 'bold 20px serif';
     ctx.textAlign = 'center';

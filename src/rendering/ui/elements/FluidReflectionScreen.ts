@@ -4,7 +4,7 @@ import { Vector2 } from '../../../types';
 import { FluidParticle } from '../fluid/FluidParticle';
 
 /**
- * FluidReflectionScreen renders the game over reflection screen with watercolor effects.
+ * FluidReflectionScreen renders the game over reflection screen with liquid watermedia effects.
  * The screen fades in with dissipation effects, and text flows like liquid paint.
  */
 export class FluidReflectionScreen extends FluidUIElement {
@@ -110,7 +110,7 @@ export class FluidReflectionScreen extends FluidUIElement {
     ctx.fillStyle = this.color.withAlpha(fadeAlpha).toString();
     ctx.fillRect(0, 0, this.width, this.height);
     
-    // Add flowing background pattern (like watercolor wash)
+    // Add flowing background pattern (like liquid dye dispersing through fluid)
     const gradient = ctx.createRadialGradient(
       this.position.x, this.position.y, 0,
       this.position.x, this.position.y, Math.max(this.width, this.height)
@@ -132,7 +132,7 @@ export class FluidReflectionScreen extends FluidUIElement {
     const centerY = this.height / 2;
     const centerX = this.width / 2;
     
-    // Title with watercolor effect (flows)
+    // Title with liquid watermedia effect (flows)
     const titleWobbleX = Math.sin(time * 0.05) * 2;
     const titleWobbleY = Math.cos(time * 0.05) * 2;
     

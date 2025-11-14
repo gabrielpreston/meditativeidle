@@ -1,5 +1,5 @@
 /**
- * Color class with watercolor-style blending and manipulation.
+ * Color class with liquid watermedia-style blending and manipulation.
  * Supports blending (like wet paint mixing), lerping, darkening,
  * saturation, and alpha manipulation for fluid UI effects.
  */

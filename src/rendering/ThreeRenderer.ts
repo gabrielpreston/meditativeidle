@@ -5,10 +5,10 @@ import { SystemContext } from '../systems/ISystem';
 import { GameConfig } from '../GameConfig';
 import { Game } from '../Game';
 import { GameScene } from './scenes/GameScene';
-import { WatercolorStateController } from './watercolor/WatercolorStateController';
+import { LiquidWatermediaStateController } from './watercolor/LiquidWatermediaStateController';
 import { FluidSim } from './watercolor/FluidSim';
 import { FluidCompositePass } from './watercolor/FluidCompositePass';
-import { WatercolorUIRenderer } from './ui/WatercolorUIRenderer';
+import { LiquidWatermediaUIRenderer } from './ui/LiquidWatermediaUIRenderer';
 import { FluidStatsTable } from './ui/elements/FluidStatsTable';
 import { FluidReflectionScreen } from './ui/elements/FluidReflectionScreen';
 import { DeveloperPanel } from '../ui/DeveloperPanel';
@@ -25,7 +25,7 @@ export class ThreeRenderer {
   private camera: THREE.OrthographicCamera;
   private composer: EffectComposer;
   private gameScene: GameScene;
-  private watercolorController: WatercolorStateController;
+  private liquidWatermediaController: LiquidWatermediaStateController;
   private fluid: FluidSim | null = null;
   private fluidPass: FluidCompositePass | null = null;
   private stressorFluidIntegration: StressorFluidIntegration | null = null;
@@ -40,7 +40,7 @@ export class ThreeRenderer {
   private uiCtx: CanvasRenderingContext2D;
   
   // Fluid UI renderer (will replace old UI rendering in Phase 3)
-  private watercolorUIRenderer: WatercolorUIRenderer | null = null;
+  private liquidWatermediaUIRenderer: LiquidWatermediaUIRenderer | null = null;
   
   // Modal screens (Phase 6)
   private fluidStatsTable: FluidStatsTable | null = null;
@@ -105,8 +105,8 @@ export class ThreeRenderer {
     console.log('Composer size:', this.width, this.height);
     console.log('Composer passes:', this.composer.passes.length);
     
-    // Setup watercolor state controller
-    this.watercolorController = new WatercolorStateController();
+    // Setup liquid watermedia state controller
+    this.liquidWatermediaController = new LiquidWatermediaStateController();
     
     // Setup UI overlay canvas (separate from WebGL canvas)
     this.uiCanvas = document.createElement('canvas');
@@ -120,12 +120,12 @@ export class ThreeRenderer {
     document.body.appendChild(this.uiCanvas);
     this.uiCtx = this.uiCanvas.getContext('2d')!;
     
-    // Initialize watercolor UI renderer (will be populated with elements in Phase 3)
-    this.watercolorUIRenderer = new WatercolorUIRenderer(
+    // Initialize liquid watermedia UI renderer (will be populated with elements in Phase 3)
+    this.liquidWatermediaUIRenderer = new LiquidWatermediaUIRenderer(
       this.uiCtx,
       this.width,
       this.height,
-      this.watercolorController
+      this.liquidWatermediaController
     );
     
     // Initialize modal screens (Phase 6)
@@ -168,8 +168,8 @@ export class ThreeRenderer {
     // Get smoothed FPS from unified counter (already updated in main.ts)
     const fps = getFPSCounter().getFPS();
     
-    // Update watercolor state controller (for fluid parameters)
-    this.watercolorController.update(serenityRatio);
+    // Update liquid watermedia state controller (for fluid parameters)
+    this.liquidWatermediaController.update(serenityRatio);
     
     // Update fluid simulation
     if (this.fluid && this.fluidPass) {
@@ -178,11 +178,11 @@ export class ThreeRenderer {
       
       // Update fluid parameters
       const fluidParams = {
-        viscosity: this.watercolorController.getViscosity(),
-        dyeDissipation: this.watercolorController.getDyeDissipation(),
-        velocityDissipation: this.watercolorController.getVelocityDissipation(),
-        curl: this.watercolorController.getCurl(),
-        pressureIters: this.watercolorController.getPressureIters(),
+        viscosity: this.liquidWatermediaController.getViscosity(),
+        dyeDissipation: this.liquidWatermediaController.getDyeDissipation(),
+        velocityDissipation: this.liquidWatermediaController.getVelocityDissipation(),
+        curl: this.liquidWatermediaController.getCurl(),
+        pressureIters: this.liquidWatermediaController.getPressureIters(),
       };
       
       // Adjust for performance mode
@@ -222,7 +222,7 @@ export class ThreeRenderer {
       // Update fluid composite pass uniforms
       this.fluidPass.setUniforms({
         dyeIntensity: 0.75 + (1 - serenityRatio) * 0.25,
-        refractionScale: this.watercolorController.getRefractionScale(),
+        refractionScale: this.liquidWatermediaController.getRefractionScale(),
         blendMode: 'overlay',
       });
     }
@@ -259,7 +259,7 @@ export class ThreeRenderer {
       // Clear UI canvas before rendering to prevent cascading artifacts
       this.uiCtx.clearRect(0, 0, this.width, this.height);
       
-      const fluidField = this.watercolorUIRenderer?.getFluidField();
+      const fluidField = this.liquidWatermediaUIRenderer?.getFluidField();
       if (fluidField) {
         this.developerPanel.update(deltaTime, fluidField, []);
       }
@@ -304,16 +304,16 @@ export class ThreeRenderer {
   // UI Rendering Methods
   
   renderUI(state: GameState, abilitySystem?: any, deltaTime: number = 0.016): void {
-    // Use watercolor UI renderer (all phases complete)
-    if (this.watercolorUIRenderer) {
-      this.watercolorUIRenderer.render(state, abilitySystem, deltaTime);
+    // Use liquid watermedia UI renderer (all phases complete)
+    if (this.liquidWatermediaUIRenderer) {
+      this.liquidWatermediaUIRenderer.render(state, abilitySystem, deltaTime);
     }
   }
   
   updateMousePos(pos: Vector2): void {
-    // Update watercolor UI renderer
-    if (this.watercolorUIRenderer) {
-      this.watercolorUIRenderer.updateMousePos(pos);
+    // Update liquid watermedia UI renderer
+    if (this.liquidWatermediaUIRenderer) {
+      this.liquidWatermediaUIRenderer.updateMousePos(pos);
     }
     // Update modal screens for hover detection
     if (this.fluidStatsTable) {
@@ -333,9 +333,9 @@ export class ThreeRenderer {
       }
     }
     
-    // Use watercolor UI renderer (all phases complete)
-    if (this.watercolorUIRenderer) {
-      return this.watercolorUIRenderer.checkAbilityClick(mousePos);
+    // Use liquid watermedia UI renderer (all phases complete)
+    if (this.liquidWatermediaUIRenderer) {
+      return this.liquidWatermediaUIRenderer.checkAbilityClick(mousePos);
     }
     return null;
   }
@@ -439,9 +439,9 @@ export class ThreeRenderer {
   
   renderStatsTable(state: GameState, stressors: any[]): void {
     // Use fluid stats table (Phase 6)
-    if (this.fluidStatsTable && this.watercolorUIRenderer) {
+    if (this.fluidStatsTable && this.liquidWatermediaUIRenderer) {
       this.fluidStatsTable.show(state, stressors);
-      const fluidField = this.watercolorUIRenderer.getFluidField();
+      const fluidField = this.liquidWatermediaUIRenderer.getFluidField();
       this.fluidStatsTable.update(0.016, fluidField, []);
       this.fluidStatsTable.render(this.uiCtx, Date.now() * 0.001);
     }
@@ -449,9 +449,9 @@ export class ThreeRenderer {
   
   renderReflection(duration: number, wave: number, insight: number): void {
     // Use fluid reflection screen (Phase 6)
-    if (this.fluidReflectionScreen && this.watercolorUIRenderer) {
+    if (this.fluidReflectionScreen && this.liquidWatermediaUIRenderer) {
       this.fluidReflectionScreen.show(duration, wave, insight);
-      const fluidField = this.watercolorUIRenderer.getFluidField();
+      const fluidField = this.liquidWatermediaUIRenderer.getFluidField();
       this.fluidReflectionScreen.update(0.016, fluidField, []);
       this.fluidReflectionScreen.render(this.uiCtx, Date.now() * 0.001);
     }
@@ -496,9 +496,9 @@ export class ThreeRenderer {
     this.uiCanvas.width = width;
     this.uiCanvas.height = height;
     
-    // Resize watercolor UI renderer
-    if (this.watercolorUIRenderer) {
-      this.watercolorUIRenderer.resize(width, height);
+    // Resize liquid watermedia UI renderer
+    if (this.liquidWatermediaUIRenderer) {
+      this.liquidWatermediaUIRenderer.resize(width, height);
     }
     
     // Resize modal screens

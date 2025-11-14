@@ -5,7 +5,7 @@ import { GameConfig } from '../../../GameConfig';
 
 /**
  * FluidWaveIndicator renders wave progress as a flowing circular ring.
- * The ring fills like a watercolor wash, with color bleeding and soft edges.
+ * The ring fills like liquid dye dispersing through fluid, with color bleeding and soft edges.
  */
 export class FluidWaveIndicator extends FluidUIElement {
   private progress: number = 0;
@@ -87,14 +87,14 @@ export class FluidWaveIndicator extends FluidUIElement {
       ctx.fill();
     }
     
-    // Percentage text (flows with ring, watercolor style)
+    // Percentage text (flows with ring, liquid watermedia style)
     if (this.progress > 0.1) {
       ctx.fillStyle = this.color.toString();
       ctx.font = '16px serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       
-      // Add text shadow for watercolor edge darkening
+      // Add text shadow for liquid watermedia edge darkening
       ctx.shadowBlur = 3;
       ctx.shadowColor = this.color.darken(0.5).withAlpha(0.5).toString();
       

@@ -1,4 +1,4 @@
-# 🌊 Stressors Overview (Liquid Watercolor Expression)
+# 🌊 Stressors Overview (Liquid Watermedia Expression)
 
 > The battlefield is a fluid medium, and stress flows through it like dye in water.
 > Each stressor is both a challenge and a current — color, movement, and pressure in motion through liquid.
@@ -23,7 +23,7 @@
   * **Color Response:** Lightens slightly when affected by focused attention abilities.
 * **Visual Expression:**
   * Appears as a **soft, cloud-like dye bloom** diffusing through the liquid medium.
-  * No sharp edges — boundaries feather naturally through fluid diffusion, like watercolor wash.
+  * No sharp edges — boundaries feather naturally through fluid diffusion, like diluted dye dispersing in liquid.
   * Subtle pulsing creates gentle expansion/contraction, like a thought being observed without judgment.
   * Colors shift based on Serenity: Light Steel Blue (high) → Pale Blue-Gray (medium) → Slate Gray-Blue (low) → Dark Slate (critical).
   * When affected by Mantra, the dye lightens and becomes more transparent, indicating dissolution through focused attention.
@@ -106,7 +106,7 @@
   * **Reset:** After reaching half orbit radius, resets orbit with new radius and cooldown.
   * **Visual Feedback:** Dash creates brief streak effect through rapid dye trail.
 * **Visual Expression:**
-  * Appears as **solid, weighty dye** with higher viscosity — like concentrated watercolor pigment.
+  * Appears as **solid, weighty dye** with higher viscosity — like concentrated pigment suspended in liquid.
   * Visual "pressure gauge" fills during orbit — dye concentration visibly increases, creating darker, denser appearance.
   * Dash creates brief streak effect — rapid dye trail showing sudden acceleration.
   * Moves slowly but persistently during orbit — thick dye flow indicating heavy pressure.
@@ -197,7 +197,7 @@
   * **Vulnerability:** Takes 2x damage from Affirm ability — positive self-talk directly counters self-doubt.
   * **Visual Feedback:** Occasional "shrink" animation (self-diminishing), brightens when hit by Affirm.
 * **Visual Expression:**
-  * Appears as **faded, translucent dye** with low opacity — like diluted watercolor wash.
+  * Appears as **faded, translucent dye** with low opacity — like diluted dye dispersing through liquid.
   * Erratic movement pattern creates hesitation — turbulence shows uncertainty and self-questioning.
   * Occasional "shrink" animation — dye concentration decreases, showing self-diminishing behavior.
   * Brightens when hit by Affirm — color shifts toward gold, indicating positive self-talk countering doubt.
@@ -314,5 +314,5 @@ All mechanics teach stress management through gameplay — players learn to reco
 * Self-Doubt + Affirm = Bright gold-gray (positive self-talk)
 * Overwhelm + Recenter = Muted gray (grounding breaks cycle)
 
-The liquid watercolor aesthetic ensures visual coherence regardless of stressor type or ability interaction — all effects flow through the same fluid medium, creating a unified, therapeutic visual experience.
+The liquid watermedia aesthetic ensures visual coherence regardless of stressor type or ability interaction — all effects flow through the same fluid medium, creating a unified, therapeutic visual experience.
 

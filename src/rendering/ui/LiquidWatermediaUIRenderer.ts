@@ -2,20 +2,20 @@ import { GameState, Vector2 } from '../../types';
 import { FluidField } from './fluid/FluidField';
 import { FluidUIElement } from './fluid/FluidUIElement';
 import { FluidParticle } from './fluid/FluidParticle';
-import { WatercolorStateController } from '../watercolor/WatercolorStateController';
+import { LiquidWatermediaStateController } from '../watercolor/LiquidWatermediaStateController';
 import { SimpleStatsDisplay } from './elements/SimpleStatsDisplay';
 
 /**
- * WatercolorUIRenderer manages all fluid UI elements and integrates
- * with the WatercolorStateController to create a cohesive watercolor aesthetic.
+ * LiquidWatermediaUIRenderer manages all fluid UI elements and integrates
+ * with the LiquidWatermediaStateController to create a cohesive liquid watermedia aesthetic.
  * All UI elements flow, blend, meld, and dissipate like liquid paint.
  */
-export class WatercolorUIRenderer {
+export class LiquidWatermediaUIRenderer {
   private fluidField: FluidField;
   private elements: FluidUIElement[] = [];
   private particles: FluidParticle[] = [];
   private time: number = 0;
-  private watercolorController: WatercolorStateController;
+  private liquidWatermediaController: LiquidWatermediaStateController;
   private currentMousePos: Vector2 | null = null;
   
   // Simple stats display
@@ -27,10 +27,10 @@ export class WatercolorUIRenderer {
     private ctx: CanvasRenderingContext2D,
     private width: number,
     private height: number,
-    watercolorController: WatercolorStateController
+    liquidWatermediaController: LiquidWatermediaStateController
   ) {
     this.fluidField = new FluidField();
-    this.watercolorController = watercolorController;
+    this.liquidWatermediaController = liquidWatermediaController;
   }
   
   /**
@@ -51,7 +51,7 @@ export class WatercolorUIRenderer {
   
   /**
    * Main render method. Updates all fluid elements and particles,
-   * then renders them with watercolor effects.
+   * then renders them with liquid watermedia effects.
    */
   render(state: GameState, abilitySystem: any, deltaTime: number): void {
     this.time += deltaTime;
@@ -59,8 +59,8 @@ export class WatercolorUIRenderer {
     // Initialize elements on first render
     this.initializeElements();
     
-    // Update fluid field intensity from watercolor params
-    const intensity = this.watercolorController.getDiffusionRate();
+    // Update fluid field intensity from liquid watermedia params
+    const intensity = this.liquidWatermediaController.getDiffusionRate();
     this.fluidField.setIntensity(intensity);
     this.fluidField.update(deltaTime);
     

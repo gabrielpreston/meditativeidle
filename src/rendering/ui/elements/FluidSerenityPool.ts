@@ -6,7 +6,7 @@ import { smoothstep } from '../../../utils/MathUtils';
 /**
  * FluidSerenityPool renders serenity/health as an organic droplet/pool shape.
  * The pool flows and morphs like spilled paint, with color transitions
- * that blend like watercolor (green → yellow → red).
+ * that blend like liquid dyes through wet-on-wet flow (green → yellow → red).
  */
 export class FluidSerenityPool extends FluidUIElement {
   private serenityRatio: number = 1.0;
@@ -134,7 +134,7 @@ export class FluidSerenityPool extends FluidUIElement {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     
-    // Text shadow for watercolor effect
+    // Text shadow for liquid watermedia effect
     ctx.shadowBlur = 2;
     ctx.shadowColor = edgeColor.withAlpha(0.5).toString();
     

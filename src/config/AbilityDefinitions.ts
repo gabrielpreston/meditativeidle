@@ -26,7 +26,7 @@ export type ActivationType =
 export interface AbilityVisualExpression {
   /** Primary visual description */
   description: string;
-  /** Watercolor techniques used */
+  /** Liquid watermedia techniques used */
   techniques: string[];
   /** Color palette reference (see COLOR_PALETTE.md) */
   colorPalette: string[];
@@ -261,7 +261,7 @@ export const AbilityDefinitions: Record<AbilityType, AbilityDefinition> = {
       durationPerLevel: 0.5, // +0.5s per level
     },
     visual: {
-      description: 'A spreading watercolor stain blooms outward, darkest at its center.',
+      description: 'A spreading liquid dye bloom expands outward, darkest at its center.',
       techniques: [
         'Puddle bloom',
         'Sedimentation',

@@ -5,7 +5,7 @@ interface StatePreset {
   wetness: number;
 }
 
-export class WatercolorStateController {
+export class LiquidWatermediaStateController {
   private currentState: AffectState = 'focus';
   private targetPreset: StatePreset;
   private currentPreset: StatePreset;

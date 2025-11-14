@@ -1,5 +1,5 @@
 /**
- * StressorShader - Custom shader for rendering stressors with watercolor effects
+ * StressorShader - Custom shader for rendering stressors with liquid watermedia effects
  * 
  * Creates soft, organic edges with pulse animation and health-based opacity.
  */
@@ -32,7 +32,7 @@ export const StressorShader = {
       vec2 center = vec2(0.5, 0.5);
       float dist = length(vUv - center);
       
-      // Watercolor-style edge (soft, organic)
+      // Soft, organic edge through fluid diffusion
       float normalizedRadius = 0.5; // CircleGeometry radius is 0.5 in normalized space
       float currentRadius = normalizedRadius * (1.0 + pulseAmount);
       float edgeDistance = currentRadius - dist;

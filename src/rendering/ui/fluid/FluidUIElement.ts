@@ -6,7 +6,7 @@ import { add, subtract, multiply, normalize, distance, lerp } from '../../../uti
 /**
  * Base class for all fluid UI elements.
  * Provides flow, blend, meld, and dissipate behaviors that create
- * the watercolor aesthetic.
+ * the liquid watermedia aesthetic.
  */
 export abstract class FluidUIElement {
   position: Vector2;
@@ -136,7 +136,7 @@ export abstract class FluidUIElement {
       // Opacity naturally decreases
       this.targetOpacity *= (1 - deltaTime * 0.1);
       
-      // Size spreads out (like watercolor bleeding)
+      // Size spreads out (like liquid dye dispersing through wet-on-wet flow)
       this.targetSize += deltaTime * 5;
     }
   }

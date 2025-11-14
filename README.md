@@ -7,7 +7,7 @@ A web-first, continuously flowing idle defense experience that explores the bala
 - **Continuous Flow**: Seamless wave transitions with no interruptions
 - **Three Core Abilities**: All abilities (Breathe, Recenter, and Affirm) are automatic
 - **Progressive Difficulty**: Exponential scaling that guarantees challenge by wave 15
-- **Procedural Visuals**: Watercolor-like aesthetics with dynamic color palettes
+- **Procedural Visuals**: Liquid watermedia aesthetics with dynamic color palettes
 - **Dynamic Audio**: Harmonic audio that responds to game state
 - **Accessibility**: Reduced motion and high contrast modes
 
